@@ -23,3 +23,7 @@ export 'now_playing_theme_service.dart';
 export 'lyrics_manager.dart';
 export 'lock_screen_lyrics_service.dart';
 export 'library_database_service.dart';
+export 'transcoding_service.dart';
+export 'queue_persistence_manager.dart';
+export 'sleep_timer_controller.dart';
+export 'external_media_controller.dart';

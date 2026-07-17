@@ -1864,4 +1864,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String themeAuthor(String author) {
     return 'by $author';
   }
+
+  @override
+  String get exitApp => 'Exit App';
 }

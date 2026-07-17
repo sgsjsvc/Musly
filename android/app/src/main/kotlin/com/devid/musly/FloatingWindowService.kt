@@ -42,11 +42,13 @@ class FloatingWindowService : Service() {
     private val handler = Handler(Looper.getMainLooper())
 
     private var tvTitle: TextView? = null
-    private var tvArtist: TextView? = null
+    private var tvArtist: android.widget.TextSwitcher? = null
     private var btnPlayPause: ImageView? = null
 
     private var isPlaying = false
     private var isHiding = false
+    private var currentArtist = ""
+    private var currentLyrics = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,6 +62,14 @@ class FloatingWindowService : Service() {
             tvTitle?.post {
                 tvTitle?.text = title
                 tvTitle?.isSelected = true
+            }
+        }
+
+        // 监听歌词变化并动态更新
+        FloatingWindowBridge.onLyricsChanged = { lyrics ->
+            currentLyrics = lyrics
+            handler.post {
+                tvArtist?.setText(if (lyrics.isBlank()) currentArtist else lyrics)
             }
         }
     }
@@ -132,26 +142,37 @@ class FloatingWindowService : Service() {
         // ── Root layout ──────────────────────────────────────────────
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setBackgroundColor(Color.parseColor("#E61C1C1E"))
+            val backgroundDrawable = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.parseColor("#991C1C1E"))
+                cornerRadius = 16 * density
+            }
+            background = backgroundDrawable
             setPadding((12 * density).toInt(), (8 * density).toInt(),
                        (12 * density).toInt(), (8 * density).toInt())
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        // ── Drag handle ──────────────────────────────────────────────
-        val dragHandle = TextView(this).apply {
-            text = "☰"
-            setTextColor(Color.parseColor("#99FFFFFF"))
-            textSize = 16f
-            setPadding((8 * density).toInt(), (8 * density).toInt(),
-                       (8 * density).toInt(), (8 * density).toInt())
+        // ── Play / Pause button ──────────────────────────────────────
+        val iconSize = (28 * density).toInt()
+        val iconPadding = (6 * density).toInt()
+        btnPlayPause = ImageView(this).apply {
+            setImageResource(
+                if (isPlaying) R.drawable.ic_floating_pause
+                else R.drawable.ic_floating_play
+            )
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
+            setOnClickListener {
+                Log.d(TAG, "Play/Pause clicked")
+                FloatingWindowBridge.onControlAction?.invoke("play_pause")
+            }
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
         }
-        root.addView(dragHandle)
+        root.addView(btnPlayPause)
 
         // ── Song info (跑马灯歌名 + 艺术家) ──────────────────────────
         val infoLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding((8 * density).toInt(), 0, (16 * density).toInt(), 0)
+            setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
             layoutParams = LinearLayout.LayoutParams(
                 0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -160,7 +181,7 @@ class FloatingWindowService : Service() {
         }
 
         // 歌名 — 跑马灯滚动
-        tvTitle = TextView(this).apply {
+        tvTitle = MarqueeTextView(this).apply {
             text = FloatingWindowBridge.currentSongTitle
             setTextColor(Color.WHITE)
             textSize = 13f
@@ -185,36 +206,38 @@ class FloatingWindowService : Service() {
         }
         infoLayout.addView(tvTitle)
 
-        // 艺术家
-        tvArtist = TextView(this).apply {
-            text = ""
-            setTextColor(Color.parseColor("#99FFFFFF"))
-            textSize = 11f
-            maxLines = 1
-            maxEms = 16
-            isSingleLine = true
-            ellipsize = TextUtils.TruncateAt.END
+        // 艺术家 / 歌词显示 (使用 TextSwitcher 实现 smooth crossfade)
+        tvArtist = android.widget.TextSwitcher(this).apply {
+            setFactory {
+                TextView(this@FloatingWindowService).apply {
+                    setTextColor(Color.parseColor("#99FFFFFF"))
+                    textSize = 11f
+                    maxLines = 1
+                    isSingleLine = true
+                    ellipsize = TextUtils.TruncateAt.END
+                }
+            }
+            inAnimation = android.view.animation.AnimationUtils.loadAnimation(
+                this@FloatingWindowService,
+                android.R.anim.fade_in
+            ).apply {
+                duration = 300
+            }
+            outAnimation = android.view.animation.AnimationUtils.loadAnimation(
+                this@FloatingWindowService,
+                android.R.anim.fade_out
+            ).apply {
+                duration = 300
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setText(if (currentLyrics.isBlank()) currentArtist else currentLyrics)
         }
         infoLayout.addView(tvArtist)
 
         root.addView(infoLayout)
-
-        // ── Play / Pause button ──────────────────────────────────────
-        val iconSize = (28 * density).toInt()
-        val iconPadding = (6 * density).toInt()
-        btnPlayPause = ImageView(this).apply {
-            setImageResource(
-                if (isPlaying) R.drawable.ic_floating_pause
-                else R.drawable.ic_floating_play
-            )
-            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
-            setOnClickListener {
-                Log.d(TAG, "Play/Pause clicked")
-                FloatingWindowBridge.onControlAction?.invoke("play_pause")
-            }
-            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
-        }
-        root.addView(btnPlayPause)
 
         // ── Next button ──────────────────────────────────────────────
         val btnNext = ImageView(this).apply {
@@ -247,11 +270,11 @@ class FloatingWindowService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = 200
+            y = 100
         }
 
         // ── Drag handling ────────────────────────────────────────────
-        dragHandle.setOnTouchListener(object : View.OnTouchListener {
+        val dragTouchListener = object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
             private var initialTouchX = 0f
@@ -280,7 +303,12 @@ class FloatingWindowService : Service() {
                 }
                 return false
             }
-        })
+        }
+
+        root.setOnTouchListener(dragTouchListener)
+        infoLayout.setOnTouchListener(dragTouchListener)
+        tvTitle?.setOnTouchListener(dragTouchListener)
+        tvArtist?.setOnTouchListener(dragTouchListener)
 
         // ── Add to screen ────────────────────────────────────────────
         try {
@@ -295,10 +323,12 @@ class FloatingWindowService : Service() {
 
     fun updateSongInfo(title: String, artist: String, playing: Boolean) {
         isPlaying = playing
+        currentArtist = artist
+        currentLyrics = "" // 新歌重置歌词
         handler.post {
             tvTitle?.text = title
             tvTitle?.isSelected = true
-            tvArtist?.text = artist
+            tvArtist?.setText(artist)
             btnPlayPause?.setImageResource(
                 if (isPlaying) R.drawable.ic_floating_pause
                 else R.drawable.ic_floating_play
@@ -332,6 +362,7 @@ class FloatingWindowService : Service() {
         // 只清空与 Service 视图渲染相关的监听器
         // onControlAction 的生命周期由 Flutter 引擎（Plugin）管理，不在这里清空
         FloatingWindowBridge.onSongTitleChanged = null
+        FloatingWindowBridge.onLyricsChanged = null
         handler.post {
             floatingView?.let {
                 try {
@@ -344,6 +375,20 @@ class FloatingWindowService : Service() {
             params = null
             // 清理 Handler 队列，防止内存泄漏
             handler.removeCallbacksAndMessages(null)
+        }
+    }
+}
+
+class MarqueeTextView(context: android.content.Context) : android.widget.TextView(context) {
+    override fun isFocused(): Boolean = true
+    override fun onFocusChanged(focused: Boolean, direction: Int, previouslyFocusedRect: android.graphics.Rect?) {
+        if (focused) {
+            super.onFocusChanged(focused, direction, previouslyFocusedRect)
+        }
+    }
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        if (hasWindowFocus) {
+            super.onWindowFocusChanged(hasWindowFocus)
         }
     }
 }

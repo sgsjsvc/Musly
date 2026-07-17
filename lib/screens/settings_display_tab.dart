@@ -75,6 +75,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
@@ -120,7 +121,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
         ),
         const SizedBox(height: 24),
         _buildSection(
-          title: 'NOW PLAYING THEMES',
+          title: isZh ? '正在播放主题' : 'NOW PLAYING THEMES',
           children: [
             _buildNowPlayingThemesButton(),
           ],
@@ -586,6 +587,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
   }
 
   Widget _buildNowPlayingThemesButton() {
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Container(
@@ -603,13 +605,13 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
           size: 18,
         ),
       ),
-      title: const Text(
-        'Customize Now Playing Screen (Beta)',
-        style: TextStyle(fontSize: 16),
+      title: Text(
+        isZh ? '自定义正在播放屏幕 (测试版)' : 'Customize Now Playing Screen (Beta)',
+        style: const TextStyle(fontSize: 16),
       ),
-      subtitle: const Text(
-        'Create and manage custom themes',
-        style: TextStyle(
+      subtitle: Text(
+        isZh ? '创建和管理自定义主题' : 'Create and manage custom themes',
+        style: const TextStyle(
           fontSize: 13,
           color: Colors.grey,
         ),

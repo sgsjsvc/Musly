@@ -1683,5 +1683,6 @@
   "addedArtistToQueueError": "将艺术家添加到队列失败",
   "dlna": "DLNA",
   "dlnaUpnp": "DLNA / UPnP",
-  "chromecast": "Chromecast"
+  "chromecast": "Chromecast",
+  "exitApp": "退出应用"
 }

@@ -3495,6 +3495,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'by {author}'**
   String themeAuthor(String author);
+
+  /// Label for the exit app button
+  ///
+  /// In en, this message translates to:
+  /// **'Exit App'**
+  String get exitApp;
 }
 
 class _AppLocalizationsDelegate

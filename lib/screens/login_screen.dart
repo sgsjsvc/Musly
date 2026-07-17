@@ -594,7 +594,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: '服务器地址',
+                      labelText: AppLocalizations.of(context)!.serverUrl,
                       hintText: 'https://your-server.com',
                       prefixIcon: const Icon(CupertinoIcons.globe),
                       border: OutlineInputBorder(
@@ -603,12 +603,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return '请输入服务器地址';
+                        return AppLocalizations.of(context)!.pleaseEnterServerUrl;
                       }
                       final url = value.trim();
                       if (!url.startsWith('http://') &&
                           !url.startsWith('https://')) {
-                        return 'URL 必须以 http:// 或 https:// 开头';
+                        return AppLocalizations.of(context)!.serverUrlMustStartWith;
                       }
                       return null;
                     },
@@ -622,7 +622,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: '用户名',
+                      labelText: AppLocalizations.of(context)!.username,
                       prefixIcon: const Icon(CupertinoIcons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -630,7 +630,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return '请输入用户名';
+                        return AppLocalizations.of(context)!.pleaseEnterUsername;
                       }
                       return null;
                     },
@@ -644,7 +644,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) { if (!isBusy) _login(); },
                     decoration: InputDecoration(
-                      labelText: '密码',
+                      labelText: AppLocalizations.of(context)!.password,
                       prefixIcon: const Icon(CupertinoIcons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -664,7 +664,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '请输入密码';
+                        return AppLocalizations.of(context)!.pleaseEnterPassword;
                       }
                       return null;
                     },
@@ -1011,9 +1011,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             )
-                          : const Text(
-                              '连接',
-                              style: TextStyle(
+                          : Text(
+                              AppLocalizations.of(context)!.connect,
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                               ),

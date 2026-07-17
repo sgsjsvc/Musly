@@ -110,6 +110,11 @@ class FloatingWindowPlugin(
                 FloatingWindowBridge.currentSongTitle = title
                 result.success(null)
             }
+            "updateLyrics" -> {
+                val lyrics = call.argument<String>("lyrics") ?: ""
+                FloatingWindowBridge.currentLyrics = lyrics
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }

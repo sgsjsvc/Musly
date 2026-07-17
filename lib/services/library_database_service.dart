@@ -42,14 +42,17 @@ class LibraryDatabaseService {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       // v1 -> v2: add starred / userRating columns if missing
-      try {
+      final columns = await db.rawQuery("PRAGMA table_info('songs')");
+      final columnNames =
+          columns.map((c) => c['name'] as String).toSet();
+      if (!columnNames.contains('starred')) {
         await db.execute(
             'ALTER TABLE songs ADD COLUMN starred INTEGER DEFAULT 0');
-      } catch (_) {}
-      try {
+      }
+      if (!columnNames.contains('userRating')) {
         await db.execute(
             'ALTER TABLE songs ADD COLUMN userRating INTEGER');
-      } catch (_) {}
+      }
     }
   }
 

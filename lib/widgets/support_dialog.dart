@@ -54,6 +54,7 @@ class _SupportDialogState extends State<SupportDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 360 || size.height < 600;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
 
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -95,7 +96,7 @@ class _SupportDialogState extends State<SupportDialog> {
 
               // Title
               Text(
-                'Support Musly',
+                isZh ? '支持 Musly' : 'Support Musly',
                 style: TextStyle(
                   fontSize: isSmallScreen ? 20 : 24,
                   fontWeight: FontWeight.bold,
@@ -105,7 +106,9 @@ class _SupportDialogState extends State<SupportDialog> {
 
               // Description
               Text(
-                'Musly is a free, open-source project. Your support helps keep it alive!',
+                isZh
+                    ? 'Musly 是一个免费的开源项目。您的支持可以帮助我们继续维持下去！'
+                    : 'Musly is a free, open-source project. Your support helps keep it alive!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 13 : 14,
@@ -118,8 +121,10 @@ class _SupportDialogState extends State<SupportDialog> {
               // Discord button
               _buildActionButton(
                 icon: CupertinoIcons.chat_bubble_fill,
-                title: 'Join our Discord',
-                subtitle: 'Get help, suggest features, chat with us',
+                title: isZh ? '加入我们的 Discord' : 'Join our Discord',
+                subtitle: isZh
+                    ? '获取帮助、提议新功能、或者与我们聊天交流'
+                    : 'Get help, suggest features, chat with us',
                 color: const Color(0xFF5865F2),
                 onTap: _launchDiscord,
               ),
@@ -128,8 +133,10 @@ class _SupportDialogState extends State<SupportDialog> {
               // Donation button
               _buildActionButton(
                 icon: CupertinoIcons.heart_fill,
-                title: 'Support with a Donation',
-                subtitle: 'Help cover server costs and development',
+                title: isZh ? '捐赠支持项目' : 'Support with a Donation',
+                subtitle: isZh
+                    ? '帮我们分担服务器及开发维护成本'
+                    : 'Help cover server costs and development',
                 color: const Color(0xFFFA2D48),
                 onTap: _launchDonation,
                 compact: isSmallScreen,
@@ -162,7 +169,7 @@ class _SupportDialogState extends State<SupportDialog> {
                         });
                       },
                       child: Text(
-                        'Don\'t show this again',
+                        isZh ? '不再显示此弹窗' : 'Don\'t show this again',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 13 : 14,
                           color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -189,7 +196,7 @@ class _SupportDialogState extends State<SupportDialog> {
                     ),
                   ),
                   child: Text(
-                    'Maybe Later',
+                    isZh ? '以后再说' : 'Maybe Later',
                     style: TextStyle(
                       fontSize: isSmallScreen ? 14 : 16,
                       fontWeight: FontWeight.w500,

@@ -56,26 +56,32 @@ class SubsonicService {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          options.extra['_logSw'] = Stopwatch()..start();
-          final safe = _sanitizeUrl(options.uri.toString());
-          debugPrint('[Musly] → ${options.method} $safe');
+          if (kDebugMode) {
+            options.extra['_logSw'] = Stopwatch()..start();
+            final safe = _sanitizeUrl(options.uri.toString());
+            debugPrint('[Musly] → ${options.method} $safe');
+          }
           handler.next(options);
         },
         onResponse: (response, handler) {
-          final sw = response.requestOptions.extra['_logSw'] as Stopwatch?;
-          sw?.stop();
-          final ms = sw?.elapsedMilliseconds ?? 0;
-          final safe = _sanitizeUrl(response.requestOptions.uri.toString());
-          debugPrint('[Musly] ← ${response.statusCode} $safe (${ms}ms)');
+          if (kDebugMode) {
+            final sw = response.requestOptions.extra['_logSw'] as Stopwatch?;
+            sw?.stop();
+            final ms = sw?.elapsedMilliseconds ?? 0;
+            final safe = _sanitizeUrl(response.requestOptions.uri.toString());
+            debugPrint('[Musly] ← ${response.statusCode} $safe (${ms}ms)');
+          }
           handler.next(response);
         },
         onError: (e, handler) {
-          final sw = e.requestOptions.extra['_logSw'] as Stopwatch?;
-          sw?.stop();
-          final ms = sw?.elapsedMilliseconds ?? 0;
-          final safe = _sanitizeUrl(e.requestOptions.uri.toString());
-          debugPrint('[Musly] ✗ ${e.type.name} $safe (${ms}ms) — ${e.message}');
-          if (e.error != null) debugPrint('[Musly]   cause: ${e.error}');
+          if (kDebugMode) {
+            final sw = e.requestOptions.extra['_logSw'] as Stopwatch?;
+            sw?.stop();
+            final ms = sw?.elapsedMilliseconds ?? 0;
+            final safe = _sanitizeUrl(e.requestOptions.uri.toString());
+            debugPrint('[Musly] ✗ ${e.type.name} $safe (${ms}ms) — ${e.message}');
+            if (e.error != null) debugPrint('[Musly]   cause: ${e.error}');
+          }
           handler.next(e);
         },
       ),

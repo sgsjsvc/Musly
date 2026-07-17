@@ -1807,4 +1807,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String themeAuthor(String author) {
     return '作者 $author';
   }
+
+  @override
+  String get exitApp => '退出应用';
 }

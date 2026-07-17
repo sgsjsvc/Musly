@@ -3,9 +3,11 @@ import 'package:musly/models/song.dart';
 import 'package:musly/providers/player_provider.dart';
 import 'package:musly/services/subsonic_service.dart';
 import 'package:musly/services/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:musly/services/upnp_service.dart';
 import 'package:musly/services/audio_handler.dart';
 import 'package:musly/services/jukebox_service.dart';
+import 'package:musly/services/transcoding_service.dart';
 import '../test_helpers.dart';
 import '../bootstrap.dart';
 
@@ -16,7 +18,7 @@ void main() {
     late PlayerProvider playerProvider;
 
     setUp(() {
-      subsonicService = SubsonicService();
+      SharedPreferences.setMockInitialValues({});
       subsonicService = SubsonicService();
       playerProvider = PlayerProvider(
         subsonicService,
@@ -25,6 +27,7 @@ void main() {
         UpnpService(),
         MuslyAudioHandler(),
         JukeboxService(),
+        TranscodingService(),
       );
     });
 

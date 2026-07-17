@@ -347,8 +347,9 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
 
   Widget _buildLrcLibSection() {
     final accent = Theme.of(context).colorScheme.primary;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
     return _buildSection(
-      title: 'Lyrics',
+      title: isZh ? '歌词' : 'Lyrics',
       children: [
         ListTile(
           contentPadding: const EdgeInsets.symmetric(
@@ -401,8 +402,9 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
     return Consumer<PlayerProvider>(
       builder: (context, player, _) {
         final accent = Theme.of(context).colorScheme.primary;
+        final isZh = Localizations.localeOf(context).languageCode == 'zh';
         return _buildSection(
-          title: 'Gapless Playback',
+          title: isZh ? '无缝播放' : 'Gapless Playback',
           children: [
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -424,12 +426,12 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                   size: 18,
                 ),
               ),
-              title: const Text(
-                'Gapless Playback',
-                style: TextStyle(fontSize: 16),
+              title: Text(
+                isZh ? '无缝播放' : 'Gapless Playback',
+                style: const TextStyle(fontSize: 16),
               ),
               subtitle: Text(
-                'Eliminate silence between songs',
+                isZh ? '消除歌曲之间的间隙' : 'Eliminate silence between songs',
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).brightness == Brightness.dark
@@ -537,6 +539,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
 
         Widget connectionBadge() {
           final isWifi = ts.currentConnectionType == ConnectionType.wifi;
+          final isZh = Localizations.localeOf(context).languageCode == 'zh';
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -554,7 +557,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  isWifi ? 'WiFi' : 'Mobile',
+                  isWifi ? 'WiFi' : (isZh ? '移动网络' : 'Mobile'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

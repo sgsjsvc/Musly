@@ -17,4 +17,13 @@ object FloatingWindowBridge {
         }
 
     var onSongTitleChanged: ((String) -> Unit)? = null
+
+    // 歌词更新监听
+    var currentLyrics: String = ""
+        set(value) {
+            field = value
+            onLyricsChanged?.invoke(value)
+        }
+
+    var onLyricsChanged: ((String) -> Unit)? = null
 }

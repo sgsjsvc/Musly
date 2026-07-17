@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'lyrics_manager.dart';
 import 'windows_system_service.dart';
+import 'floating_window_controller.dart';
 
 /// Service for managing synchronized lyrics on the lock screen
 /// Handles iOS Live Activities and Android Media Notification updates
@@ -179,6 +180,15 @@ class LockScreenLyricsService {
     if (supportsWindowsNotification) {
       await _windowsService.updateLyrics(line);
     }
+
+    // Update Android Floating Window lyrics
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await FloatingWindowController.updateLyrics(line);
+      } catch (e) {
+        debugPrint('[Lyrics] Failed to update floating window lyrics: $e');
+      }
+    }
   }
 
   /// Update song info for Live Activity (iOS) and Windows
@@ -224,6 +234,13 @@ class LockScreenLyricsService {
       await _platform.invokeMethod('clearLyrics');
     } catch (e) {
       debugPrint('[Lyrics] Failed to clear native lyrics: $e');
+    }
+
+    // Clear Android Floating Window lyrics
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await FloatingWindowController.updateLyrics('');
+      } catch (_) {}
     }
 
     _lastSentLine = null;

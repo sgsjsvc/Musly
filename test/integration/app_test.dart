@@ -6,6 +6,7 @@ import 'package:musly/providers/auth_provider.dart';
 import 'package:musly/services/services.dart';
 import 'package:musly/services/locale_service.dart';
 import 'package:musly/services/theme_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../bootstrap.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
     testWidgets('should display login screen when not authenticated', (
       tester,
     ) async {
+      SharedPreferences.setMockInitialValues({});
       final storageService = StorageService();
       final subsonicService = SubsonicService();
 
@@ -40,6 +42,7 @@ void main() {
     });
 
     testWidgets('should have login form fields', (tester) async {
+      SharedPreferences.setMockInitialValues({});
       final storageService = StorageService();
       final subsonicService = SubsonicService();
 
@@ -68,6 +71,7 @@ void main() {
     });
 
     testWidgets('should validate empty form fields', (tester) async {
+      SharedPreferences.setMockInitialValues({});
       final storageService = StorageService();
       final subsonicService = SubsonicService();
 

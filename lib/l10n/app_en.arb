@@ -1981,5 +1981,7 @@
   "themeAnimBadge": "ANIM",
   "@themeAnimBadge": { "description": "Badge shown on theme cards that have animations enabled" },
   "themeAuthor": "by {author}",
-  "@themeAuthor": { "description": "Author attribution shown on theme preview card", "placeholders": { "author": { "type": "String" } } }
+  "@themeAuthor": { "description": "Author attribution shown on theme preview card", "placeholders": { "author": { "type": "String" } } },
+  "exitApp": "Exit App",
+  "@exitApp": { "description": "Label for the exit app button" }
 }

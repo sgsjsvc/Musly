@@ -109,7 +109,7 @@ class _EmulatorWarningScreen extends StatelessWidget {
                         exit(0);
                       },
                       icon: const Icon(Icons.exit_to_app),
-                      label: const Text('退出应用'),
+                      label: Text(l10n.exitApp),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size(200, 50),
                       ),
@@ -122,6 +122,16 @@ class _EmulatorWarningScreen extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Wraps a service initialisation call so that failures are logged but never
+/// propagate — one broken service must not prevent the app from starting.
+Future<void> _safeInit(String label, Future<void> Function() init) async {
+  try {
+    await init();
+  } catch (e) {
+    debugPrint('Failed to initialize $label: $e');
   }
 }
 
@@ -167,49 +177,22 @@ void main() async {
   final themeService = ThemeService();
   final nowPlayingThemeService = NowPlayingThemeService();
 
-  BpmAnalyzerService().initialize().catchError((e) {
-    debugPrint('Failed to initialize BPM analyzer: $e');
-  });
-  offlineService.initialize().catchError((e) {
-    debugPrint('Failed to initialize offline service: $e');
-  });
-  recommendationService.initialize().catchError((e) {
-    debugPrint('Failed to initialize recommendation service: $e');
-  });
-  localMusicService.initialize().catchError((e) {
-    debugPrint('Failed to initialize local music service: $e');
-  });
-  localeService.loadSavedLocale().catchError((e) {
-    debugPrint('Failed to load saved locale: $e');
-  });
-  await themeService.initialize().catchError((e) {
-    debugPrint('Failed to initialize theme service: $e');
-  });
-  jukeboxService.initialize().catchError((e) {
-    debugPrint('Failed to initialize jukebox service: $e');
-  });
-  nowPlayingThemeService.initialize().catchError((e) {
-    debugPrint('Failed to initialize now playing theme service: $e');
-  });
+  // Run independent service initialisations in parallel.
+  // Each is individually wrapped so one failure doesn't block the others.
+  await Future.wait([
+    _safeInit('BPM analyzer', () => BpmAnalyzerService().initialize()),
+    _safeInit('Offline service', () => offlineService.initialize()),
+    _safeInit('Recommendation service', () => recommendationService.initialize()),
+    _safeInit('Local music service', () => localMusicService.initialize()),
+    _safeInit('Locale service', () => localeService.loadSavedLocale()),
+    _safeInit('Theme service', () => themeService.initialize()),
+    _safeInit('Jukebox service', () => jukeboxService.initialize()),
+    _safeInit('Now playing theme', () => nowPlayingThemeService.initialize()),
+    _safeInit('Favorite playlists', () => FavoritePlaylistsService().initialize()),
+    _safeInit('Analytics', () => AnalyticsService().initialize()),
+    _safeInit('Player UI settings', () => PlayerUiSettingsService().initialize()),
+  ]);
 
-  // Initialize favorite playlists service
-  FavoritePlaylistsService().initialize().catchError((e) {
-    debugPrint('Failed to initialize favorite playlists service: $e');
-  });
-
-  // Initialize analytics service (privacy-first, anonymous)
-  final analyticsService = AnalyticsService();
-  analyticsService.initialize().catchError((e) {
-    debugPrint('Failed to initialize analytics: $e');
-  });
-
-  // Analytics service is initialized and used via AnalyticsNavigatorObserver
-
-  try {
-    await PlayerUiSettingsService().initialize();
-  } catch (e) {
-    debugPrint('Failed to initialize player UI settings: $e');
-  }
 
   // Initialise the audio service BEFORE runApp so the background audio engine
   // is ready and fully decoupled from the Flutter widget lifecycle on iOS.

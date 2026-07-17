@@ -73,6 +73,11 @@ class FloatingWindowController {
     await _safeInvoke('updateSongTitle', {'title': title});
   }
 
+  /// 向原生端发送当前句歌词进行滚动显示
+  static Future<void> updateLyrics(String lyrics) async {
+    await _safeInvoke('updateLyrics', {'lyrics': lyrics});
+  }
+
   static void dispose() {
     _onControlCallback = null;
     _channel.setMethodCallHandler(null);
