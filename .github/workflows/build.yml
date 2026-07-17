@@ -1,0 +1,220 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.8)'
+        required: true
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.41.7'
+
+jobs:
+  # Validate secrets exist
+  check-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.COUNTLY_SERVER_URL }}" ]; then
+            echo "Warning: COUNTLY_SERVER_URL secret not set. Analytics will be disabled."
+          else
+            echo "COUNTLY_SERVER_URL secret is configured"
+          fi
+
+          if [ -z "${{ secrets.COUNTLY_APP_KEY }}" ]; then
+            echo "Warning: COUNTLY_APP_KEY secret not set. Analytics will be disabled."
+          else
+            echo "COUNTLY_APP_KEY secret is configured (masked)"
+          fi
+
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "Warning: ANDROID_KEYSTORE_BASE64 secret not set. Will use debug keystore (builds may fail signature checks)."
+          else
+            echo "ANDROID_KEYSTORE_BASE64 secret is configured"
+          fi
+        continue-on-error: true
+
+  # Android Build - All CPU architectures
+  build-android:
+    runs-on: ubuntu-latest
+    needs: check-secrets
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 'stable'
+
+      - name: Verify Dart SDK Version
+        run: |
+          DART_VERSION=$(dart --version | grep -oP 'Dart SDK version: \K[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "Dart SDK version: $DART_VERSION"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode Android Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          echo "Decoding keystore from base64..."
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/musly-release.keystore
+
+          # Create key.properties
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=musly-release.keystore
+          EOF
+
+          echo "Keystore configured for signing"
+
+      # Build universal APK (all ABIs in one APK)
+      - name: Build Universal APK (arm64-v8a, armeabi-v7a, x86_64, x86)
+        env:
+          COUNTLY_SERVER_URL: ${{ secrets.COUNTLY_SERVER_URL }}
+          COUNTLY_APP_KEY: ${{ secrets.COUNTLY_APP_KEY }}
+        run: |
+          echo "::add-mask::$COUNTLY_APP_KEY"
+          flutter build apk --release \
+            --dart-define=COUNTLY_SERVER_URL="$COUNTLY_SERVER_URL" \
+            --dart-define=COUNTLY_APP_KEY="$COUNTLY_APP_KEY" 2>&1 | grep -v "$COUNTLY_APP_KEY" || true
+
+      # Build split APKs (one per ABI for smaller downloads)
+      - name: Build Split APKs (per-ABI)
+        env:
+          COUNTLY_SERVER_URL: ${{ secrets.COUNTLY_SERVER_URL }}
+          COUNTLY_APP_KEY: ${{ secrets.COUNTLY_APP_KEY }}
+        run: |
+          echo "::add-mask::$COUNTLY_APP_KEY"
+          flutter build apk --release --split-per-abi \
+            --dart-define=COUNTLY_SERVER_URL="$COUNTLY_SERVER_URL" \
+            --dart-define=COUNTLY_APP_KEY="$COUNTLY_APP_KEY" 2>&1 | grep -v "$COUNTLY_APP_KEY" || true
+
+      # Build App Bundle (for Google Play Store)
+      - name: Build App Bundle
+        env:
+          COUNTLY_SERVER_URL: ${{ secrets.COUNTLY_SERVER_URL }}
+          COUNTLY_APP_KEY: ${{ secrets.COUNTLY_APP_KEY }}
+        run: |
+          echo "::add-mask::$COUNTLY_APP_KEY"
+          flutter build appbundle --release \
+            --dart-define=COUNTLY_SERVER_URL="$COUNTLY_SERVER_URL" \
+            --dart-define=COUNTLY_APP_KEY="$COUNTLY_APP_KEY" 2>&1 | grep -v "$COUNTLY_APP_KEY" || true
+
+      - name: List built APKs
+        run: |
+          echo "=== Universal APK ==="
+          ls -lh build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || echo "Not found"
+          echo ""
+          echo "=== Split APKs (per-ABI) ==="
+          ls -lh build/app/outputs/flutter-apk/app-*-release.apk 2>/dev/null || echo "Not found"
+          echo ""
+          echo "=== App Bundle ==="
+          ls -lh build/app/outputs/bundle/release/*.aab 2>/dev/null || echo "Not found"
+
+      - name: Upload Universal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-universal
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Split APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-split
+          path: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+            build/app/outputs/flutter-apk/app-x86-release.apk
+
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/*.aab
+
+  # Create Release
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-android]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+          git push origin "v${{ github.event.inputs.version }}"
+
+      - name: Download Android Universal APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk-universal
+          path: artifacts/android/
+
+      - name: Download Android Split APKs
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk-split
+          path: artifacts/android/split/
+
+      - name: Download Android AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: android-aab
+          path: artifacts/android/aab/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Musly v${{ github.event.inputs.version }}
+          body: |
+            ## Musly v${{ github.event.inputs.version }}
+
+            ### Downloads
+
+            **Android:**
+            - `app-release.apk` - Universal APK (all devices: arm64-v8a, armeabi-v7a, x86_64, x86)
+            - `app-arm64-v8a-release.apk` - 64-bit ARM only (modern phones/tablets)
+            - `app-armeabi-v7a-release.apk` - 32-bit ARM only (older devices)
+            - `app-x86_64-release.apk` - 64-bit x86 only (emulators, ChromeOS)
+            - `app-x86-release.apk` - 32-bit x86 only (older emulators)
+            - `musly.aab` - App Bundle (for Google Play Store)
+
+            ### CPU Architecture Support
+
+            | Architecture | Device Examples |
+            |-------------|-----------------|
+            | arm64-v8a | Modern phones (Pixel, Samsung, etc.) |
+            | armeabi-v7a | Older phones, budget devices |
+            | x86_64 | Emulators, ChromeOS, Intel tablets |
+            | x86 | Older emulators |
+
+            ### Changelog
+            See [CHANGELOG.md](https://github.com/dddevid/Musly/blob/master/CHANGELOG.md)
+
+            ### Translations
+            Contribute translations at [Crowdin](https://crowdin.com/project/musly)
+          files: |
+            artifacts/android/*.apk
+            artifacts/android/split/*.apk
+            artifacts/android/aab/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

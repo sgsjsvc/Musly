@@ -1,0 +1,87 @@
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
+import java.util.Properties
+import java.io.FileInputStream
+
+// Load keystore properties from key.properties if it exists
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace = "com.devid.musly"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    defaultConfig {
+        applicationId = "com.devid.musly"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+
+        ndk {
+            // Support all CPU architectures
+            abiFilters += listOf(
+                "arm64-v8a",   // 64-bit ARM (most modern Android phones/tablets)
+                "armeabi-v7a", // 32-bit ARM (older Android devices)
+                "x86_64",      // 64-bit x86 (emulators, ChromeOS, some tablets)
+                "x86"          // 32-bit x86 (older emulators)
+            )
+        }
+    }
+
+    // Configure signing with custom keystore or debug fallback
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
+        debug {
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation("androidx.media:media:1.7.0")
+    implementation("androidx.core:core-ktx:1.13.1")
+}
+
+flutter {
+    source = "../.."
+}

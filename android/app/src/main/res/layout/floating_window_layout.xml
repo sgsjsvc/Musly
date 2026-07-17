@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/floating_window_background"
+    android:padding="8dp"
+    android:gravity="center_vertical"
+    android:elevation="8dp">
+
+    <!-- Album Artwork -->
+    <ImageView
+        android:id="@+id/floating_artwork"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:scaleType="centerCrop"
+        android:src="@mipmap/ic_launcher"
+        android:background="@drawable/floating_artwork_background" />
+
+    <!-- Song Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:id="@+id/floating_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="未在播放"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:maxWidth="150dp" />
+
+        <TextView
+            android:id="@+id/floating_artist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Musly"
+            android:textColor="#B0B0B0"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:maxWidth="150dp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Play/Pause Button -->
+    <ImageView
+        android:id="@+id/floating_play_pause"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_media_play"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="播放/暂停" />
+
+    <!-- Next Button -->
+    <ImageView
+        android:id="@+id/floating_next"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_media_next"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="下一首" />
+
+</LinearLayout>
