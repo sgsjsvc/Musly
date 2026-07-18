@@ -577,6 +577,9 @@ class SubsonicService {
     try {
       final response = await _dio.get(url);
       final data = response.data;
+      if (kDebugMode) {
+        debugPrint('[Subsonic] createPlaylist response: $data');
+      }
 
       final decoded = data is String ? json.decode(data) : data;
       final subsonicResponse = decoded['subsonic-response'];
@@ -586,10 +589,21 @@ class SubsonicService {
 
       if (subsonicResponse['status'] != 'ok') {
         final error = subsonicResponse['error'];
+        if (kDebugMode) {
+          debugPrint('[Subsonic] createPlaylist failed with error: $error');
+        }
         throw Exception(error?['message'] ?? 'Unknown error');
       }
     } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Subsonic] createPlaylist DioException: $e');
+      }
       throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Subsonic] createPlaylist Exception: $e');
+      }
+      rethrow;
     }
   }
 

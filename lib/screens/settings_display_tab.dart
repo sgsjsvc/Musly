@@ -11,6 +11,7 @@ import '../services/locale_service.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../services/floating_window_controller.dart';
 import 'theme_manager_screen.dart';
 
 class SettingsDisplayTab extends StatefulWidget {
@@ -32,6 +33,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
   String _artworkShadow = 'soft';
   String _artworkShadowColor = 'black';
   bool _liveSearch = true;
+  bool _isIgnoringBattery = false;
 
   ThemeMode _themeMode = ThemeMode.system;
   AccentColor _accentColor = AccentColor.red;
@@ -56,6 +58,11 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
     if (!mounted) return;
     final themeService = Provider.of<ThemeService>(context, listen: false);
 
+    bool ignoringBattery = false;
+    if (!kIsWeb && Platform.isAndroid) {
+      ignoringBattery = await FloatingWindowController.checkBatteryOptimization();
+    }
+
     setState(() {
       _showVolumeSlider = _playerUiSettings.getShowVolumeSlider();
       _showStarRatings = _playerUiSettings.getShowStarRatings();
@@ -70,6 +77,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
       _themeMode = themeService.themeMode;
       _accentColor = themeService.accentColor;
       _liquidGlass = themeService.liquidGlass;
+      _isIgnoringBattery = ignoringBattery;
     });
   }
 
@@ -109,7 +117,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
               _buildDivider(),
               _buildFloatingWindowToggle(),
               _buildDivider(),
-              _buildBootAutoStartToggle(),
+              ..._buildBootAutoStartWidgets(),
             ],
             if (_isDesktop) ...[
               _buildDivider(),
@@ -542,6 +550,72 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
     );
   }
 
+  List<Widget> _buildBootAutoStartWidgets() {
+    final playerProvider = Provider.of<PlayerProvider>(context, listen: true);
+    final isEnabled = playerProvider.bootAutoStart;
+
+    final List<Widget> widgets = [
+      _buildBootAutoStartToggle(),
+    ];
+
+    if (isEnabled && !kIsWeb && Platform.isAndroid) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 32, right: 16),
+          child: Column(
+            children: [
+              const Divider(height: 1, thickness: 0.5),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('允许后台无限制运行 (忽略电池优化)', style: TextStyle(fontSize: 14)),
+                subtitle: Text(
+                  _isIgnoringBattery ? '已获得无限制后台运行权限' : '建议开启，可能导致自启动被后台清理。点击去忽略电池优化。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _isIgnoringBattery
+                        ? Colors.green
+                        : (_isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText),
+                  ),
+                ),
+                trailing: _isIgnoringBattery
+                    ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                    : const Icon(Icons.chevron_right, size: 20),
+                onTap: _isIgnoringBattery
+                    ? null
+                    : () async {
+                        final success = await FloatingWindowController.requestIgnoreBatteryOptimization();
+                        if (success) {
+                          // Recheck status after return
+                          Future.delayed(const Duration(seconds: 1), () async {
+                            final state = await FloatingWindowController.checkBatteryOptimization();
+                            if (mounted) {
+                              setState(() {
+                                _isIgnoringBattery = state;
+                              });
+                            }
+                          });
+                        }
+                      },
+              ),
+              const Divider(height: 1, thickness: 0.5),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('自启动权限管理', style: TextStyle(fontSize: 14)),
+                subtitle: const Text('针对国内定制系统（如小米/华为等），若无法自启动，请点击去手动开启允许自启动。', style: TextStyle(fontSize: 12)),
+                trailing: const Icon(Icons.arrow_forward, size: 20),
+                onTap: () async {
+                  await FloatingWindowController.openAutoStartSettings();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
   Widget _buildBootAutoStartToggle() {
     final playerProvider = Provider.of<PlayerProvider>(context, listen: true);
     final isEnabled = playerProvider.bootAutoStart;
@@ -579,8 +653,16 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
       trailing: CupertinoSwitch(
         value: isEnabled,
         activeTrackColor: Theme.of(context).colorScheme.primary,
-        onChanged: (value) {
+        onChanged: (value) async {
           playerProvider.setBootAutoStart(value);
+          if (value) {
+            final state = await FloatingWindowController.checkBatteryOptimization();
+            if (mounted) {
+              setState(() {
+                _isIgnoringBattery = state;
+              });
+            }
+          }
         },
       ),
     );

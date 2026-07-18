@@ -658,84 +658,42 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _showCreatePlaylistDialog(BuildContext context) async {
-    final controller = TextEditingController();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final messenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.newPlaylist),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.playlistName,
-              filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(12),
+      builder: (dialogContext) => _CreatePlaylistDialog(
+        title: localizations.newPlaylist,
+        hintText: localizations.playlistName,
+        cancelText: localizations.cancel,
+        createText: localizations.create,
+        onCreate: (name) async {
+          final libraryProvider = Provider.of<LibraryProvider>(
+            context,
+            listen: false,
+          );
+          await libraryProvider.createPlaylist(name);
+        },
+        onSuccess: (name) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(localizations.playlistCreated(name)),
+              behavior: SnackBarBehavior.floating,
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
-                final libraryProvider = Provider.of<LibraryProvider>(
-                  context,
-                  listen: false,
-                );
-                try {
-                  await libraryProvider.createPlaylist(controller.text.trim());
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .playlistCreated(controller.text),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .errorCreatingPlaylist(e),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.create),
-          ),
-        ],
+          );
+        },
+        onError: (e) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(localizations.errorCreatingPlaylist(e)),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
       ),
     );
-    controller.dispose();
   }
 
   void _showLibrarySearch(BuildContext context) {
@@ -1185,6 +1143,112 @@ class _SettingsSheet extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CreatePlaylistDialog extends StatefulWidget {
+  final Future<void> Function(String) onCreate;
+  final String title;
+  final String hintText;
+  final String cancelText;
+  final String createText;
+  final void Function(String) onSuccess;
+  final void Function(Object) onError;
+
+  const _CreatePlaylistDialog({
+    required this.onCreate,
+    required this.title,
+    required this.hintText,
+    required this.cancelText,
+    required this.createText,
+    required this.onSuccess,
+    required this.onError,
+  });
+
+  @override
+  State<_CreatePlaylistDialog> createState() => _CreatePlaylistDialogState();
+}
+
+class _CreatePlaylistDialogState extends State<_CreatePlaylistDialog> {
+  late final TextEditingController _controller;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            filled: true,
+            fillColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: Text(widget.cancelText),
+        ),
+        TextButton(
+          onPressed: _submitting
+              ? null
+              : () async {
+                  final name = _controller.text.trim();
+                  if (name.isNotEmpty) {
+                    setState(() {
+                      _submitting = true;
+                    });
+                    try {
+                      await widget.onCreate(name);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                      widget.onSuccess(name);
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() {
+                          _submitting = false;
+                        });
+                      }
+                      widget.onError(e);
+                    }
+                  }
+                },
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(widget.createText),
+        ),
+      ],
     );
   }
 }

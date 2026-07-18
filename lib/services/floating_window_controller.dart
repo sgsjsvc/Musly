@@ -19,6 +19,12 @@ class FloatingWindowController {
         _onControlCallback?.call(action);
       }
     });
+    // 通知原生端：Flutter 引擎已完全启动，并且 MethodChannel 已绑定就绪
+    notifyEngineReady();
+  }
+
+  static Future<void> notifyEngineReady() async {
+    await _safeInvoke('engineReady');
   }
 
   /// 安全调用原生方法，捕获所有异常防止 UI 卡死
@@ -38,6 +44,18 @@ class FloatingWindowController {
 
   static Future<void> requestPermission() async {
     await _safeInvoke('requestPermission');
+  }
+
+  static Future<bool> checkBatteryOptimization() async {
+    return await _safeInvoke<bool>('checkBatteryOptimization') ?? false;
+  }
+
+  static Future<bool> requestIgnoreBatteryOptimization() async {
+    return await _safeInvoke<bool>('requestIgnoreBatteryOptimization') ?? false;
+  }
+
+  static Future<bool> openAutoStartSettings() async {
+    return await _safeInvoke<bool>('openAutoStartSettings') ?? false;
   }
 
   static Future<void> show({

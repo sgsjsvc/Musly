@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import org.json.JSONArray
 
 /**
  * Listens for BOOT_COMPLETED and starts the FloatingWindowService
@@ -35,9 +36,37 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.d(TAG, "Auto-start enabled, starting FloatingWindowService")
+        // 从 SharedPreferences 中直接解析上次播放的歌名与歌手
+        var lastTitle = "未知歌曲"
+        var lastArtist = "未知歌手"
+        val queueJson = prefs.getString("flutter.persistent_queue", null)
+        val indexVal = prefs.all["flutter.persistent_queue_index"]
+        val queueIndex = when (indexVal) {
+            is Long -> indexVal.toInt()
+            is Int -> indexVal
+            else -> 0
+        }
 
-        val serviceIntent = Intent(context, FloatingWindowService::class.java)
+        if (!queueJson.isNullOrEmpty()) {
+            try {
+                val jsonArray = JSONArray(queueJson)
+                if (queueIndex in 0 until jsonArray.length()) {
+                    val songObj = jsonArray.getJSONObject(queueIndex)
+                    lastTitle = songObj.optString("title", "未知歌曲")
+                    lastArtist = songObj.optString("artist", "未知歌手")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse persistent queue on boot: $e")
+            }
+        }
+
+        Log.d(TAG, "Auto-start enabled, starting FloatingWindowService directly (title=$lastTitle, artist=$lastArtist)")
+
+        val serviceIntent = Intent(context, FloatingWindowService::class.java).apply {
+            putExtra("title", lastTitle)
+            putExtra("artist", lastArtist)
+            putExtra("isPlaying", false)
+        }
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)

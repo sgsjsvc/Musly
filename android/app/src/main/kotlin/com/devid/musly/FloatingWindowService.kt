@@ -163,7 +163,7 @@ class FloatingWindowService : Service() {
             setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             setOnClickListener {
                 Log.d(TAG, "Play/Pause clicked")
-                FloatingWindowBridge.onControlAction?.invoke("play_pause")
+                triggerControlAction("play_pause")
             }
             layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
         }
@@ -245,7 +245,7 @@ class FloatingWindowService : Service() {
             setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             setOnClickListener {
                 Log.d(TAG, "Next clicked")
-                FloatingWindowBridge.onControlAction?.invoke("next")
+                triggerControlAction("next")
             }
             layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
         }
@@ -375,6 +375,20 @@ class FloatingWindowService : Service() {
             params = null
             // 清理 Handler 队列，防止内存泄漏
             handler.removeCallbacksAndMessages(null)
+        }
+    }
+
+    private fun triggerControlAction(action: String) {
+        val callback = FloatingWindowBridge.onControlAction
+        if (callback != null) {
+            callback.invoke(action)
+        } else {
+            Log.d(TAG, "Flutter engine not running, starting MainActivity with pending action: $action")
+            val intent = Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra("pending_action", action)
+            }
+            startActivity(intent)
         }
     }
 }

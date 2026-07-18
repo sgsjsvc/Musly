@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import io.flutter.plugin.common.MethodCall
@@ -17,6 +18,7 @@ class FloatingWindowPlugin(
     companion object {
         private const val TAG = "FloatingWindowPlugin"
         private var instance: FloatingWindowPlugin? = null
+        var onEngineReady: (() -> Unit)? = null
 
         fun registerWith(context: Context, channel: MethodChannel) {
             instance = FloatingWindowPlugin(context, channel)
@@ -38,6 +40,11 @@ class FloatingWindowPlugin(
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
+            "engineReady" -> {
+                Log.d(TAG, "Engine ready event received")
+                onEngineReady?.invoke()
+                result.success(null)
+            }
             "checkPermission" -> {
                 val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     Settings.canDrawOverlays(context)
@@ -57,6 +64,113 @@ class FloatingWindowPlugin(
                     context.startActivity(intent)
                 }
                 result.success(null)
+            }
+            "checkBatteryOptimization" -> {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                val isIgnoring = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    pm.isIgnoringBatteryOptimizations(context.packageName)
+                } else {
+                    true
+                }
+                result.success(isIgnoring)
+            }
+            "requestIgnoreBatteryOptimization" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        try {
+                            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                            result.success(true)
+                        } catch (ex: Exception) {
+                            Log.e(TAG, "Failed to request ignore battery optimization: $ex")
+                            result.success(false)
+                        }
+                    }
+                } else {
+                    result.success(true)
+                }
+            }
+            "openAutoStartSettings" -> {
+                val intents = mutableListOf<Intent>()
+
+                // Xiaomi / MIUI / HyperOS
+                intents.add(Intent().apply {
+                    setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
+                })
+                
+                // Huawei
+                intents.add(Intent().apply {
+                    setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")
+                })
+                intents.add(Intent().apply {
+                    setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.bootstart.BootStartActivity")
+                })
+                
+                // Oppo
+                intents.add(Intent().apply {
+                    setClassName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")
+                })
+                intents.add(Intent().apply {
+                    setClassName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")
+                })
+                
+                // Vivo
+                intents.add(Intent().apply {
+                    setClassName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")
+                })
+                intents.add(Intent().apply {
+                    setClassName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")
+                })
+                
+                // Samsung
+                intents.add(Intent().apply {
+                    setClassName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity")
+                })
+
+                // Meizu
+                intents.add(Intent().apply {
+                    setClassName("com.meizu.safe", "com.meizu.safe.permission.SmartBGActivity")
+                })
+
+                // OnePlus
+                intents.add(Intent().apply {
+                    setClassName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity")
+                })
+
+                var opened = false
+                for (intent in intents) {
+                    try {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                        opened = true
+                        break
+                    } catch (e: Exception) {
+                        // Try next intent
+                    }
+                }
+
+                if (!opened) {
+                    try {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                        opened = true
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to open details settings: $e")
+                    }
+                }
+                result.success(opened)
             }
             "show" -> {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)) {

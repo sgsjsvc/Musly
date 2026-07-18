@@ -85,41 +85,22 @@ class PlaylistsScreen extends StatelessWidget {
   }
 
   Future<void> _showCreatePlaylistDialog(BuildContext context) async {
-    final controller = TextEditingController();
-
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('新建歌单'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '歌单名称'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
-                final libraryProvider = Provider.of<LibraryProvider>(
-                  context,
-                  listen: false,
-                );
-                await libraryProvider.createPlaylist(controller.text.trim());
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              }
-            },
-            child: const Text('创建'),
-          ),
-        ],
+      builder: (dialogContext) => _CreatePlaylistDialog(
+        title: '新建歌单',
+        hintText: '歌单名称',
+        cancelText: '取消',
+        createText: '创建',
+        onCreate: (name) async {
+          final libraryProvider = Provider.of<LibraryProvider>(
+            context,
+            listen: false,
+          );
+          await libraryProvider.createPlaylist(name);
+        },
       ),
     );
-    controller.dispose();
   }
 
   void _showPlaylistOptions(BuildContext context, Playlist playlist) {
@@ -217,6 +198,115 @@ class _PlaylistTile extends StatelessWidget {
       ),
       onTap: onTap,
       onLongPress: onLongPress,
+    );
+  }
+}
+
+class _CreatePlaylistDialog extends StatefulWidget {
+  final Future<void> Function(String) onCreate;
+  final String title;
+  final String hintText;
+  final String cancelText;
+  final String createText;
+
+  const _CreatePlaylistDialog({
+    required this.onCreate,
+    required this.title,
+    required this.hintText,
+    required this.cancelText,
+    required this.createText,
+  });
+
+  @override
+  State<_CreatePlaylistDialog> createState() => _CreatePlaylistDialogState();
+}
+
+class _CreatePlaylistDialogState extends State<_CreatePlaylistDialog> {
+  late final TextEditingController _controller;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            filled: true,
+            fillColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: Text(widget.cancelText),
+        ),
+        TextButton(
+          onPressed: _submitting
+              ? null
+              : () async {
+                  final name = _controller.text.trim();
+                  if (name.isNotEmpty) {
+                    setState(() {
+                      _submitting = true;
+                    });
+                    try {
+                      await widget.onCreate(name);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() {
+                          _submitting = false;
+                        });
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(widget.createText),
+        ),
+      ],
     );
   }
 }
