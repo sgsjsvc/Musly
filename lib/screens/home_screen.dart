@@ -14,6 +14,7 @@ import '../widgets/widgets.dart';
 import 'album_screen.dart';
 import 'playlist_screen.dart';
 import 'history_screen.dart';
+import 'search_screen.dart';
 import '../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -40,15 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return songs.map((s) => s.id).join('|');
   }
-
-  bool get _isDesktop =>
-      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isDesktop = _isDesktop;
-    final hPad = isDesktop ? 32.0 : 16.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;    final hPad = 16.0;
 
     return Scaffold(
       body: CustomScrollView(
@@ -56,20 +51,30 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverAppBar(
             pinned: true,
             floating: true,
-            expandedHeight: isDesktop ? 80 : 70,
+            expandedHeight: 70,
             backgroundColor: isDark ? AppTheme.darkBackground : Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: EdgeInsets.only(left: hPad, bottom: 14),
               title: Text(
                 _getGreeting(),
                 style: TextStyle(
-                  fontSize: isDesktop ? 28 : 24,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : Colors.black,
                 ),
               ),
             ),
             actions: [
+              if (MediaQuery.of(context).orientation == Orientation.landscape)
+                IconButton(
+                  icon: Icon(
+                    CupertinoIcons.search,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () {
+                    NavigationHelper.push(context, const SearchScreen());
+                  },
+                ),
               IconButton(
                 icon: Icon(
                   CupertinoIcons.clock,
@@ -79,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   NavigationHelper.push(context, const HistoryScreen());
                 },
               ),
-              if (isDesktop) const SizedBox(width: 8),
             ],
           ),
           SliverToBoxAdapter(
@@ -87,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, libraryProvider, recommendationService, _) {
                 if (libraryProvider.isLoading &&
                     !libraryProvider.isInitialized) {
-                  return _buildLoadingState(isDesktop, hPad);
+                  return _buildLoadingState(hPad);
                 }
 
                 final allSongs = libraryProvider.randomSongs;
@@ -112,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final personalizedFeed = _cachedPersonalized;
 
                 return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : 0),
+                  padding: EdgeInsets.symmetric(horizontal: 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -121,12 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 16),
                         _QuickAccessGrid(
                           albums: libraryProvider.recentAlbums
-                              .take(isDesktop ? 6 : 4)
+                              .take(4)
                               .toList(),
                           playlists: libraryProvider.playlists
-                              .take(isDesktop ? 3 : 2)
+                              .take(2)
                               .toList(),
-                          isDesktop: isDesktop,
                           hPad: hPad,
                         ),
                       ],
@@ -144,16 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.stars_rounded,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...personalizedFeed.take(5).map((song) {
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: personalizedFeed,
-                              index: personalizedFeed.indexOf(song),
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: personalizedFeed,
@@ -170,16 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.bolt_rounded,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...mixes['Quick Picks']!.take(5).map((song) {
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: mixes['Quick Picks']!,
-                              index: mixes['Quick Picks']!.indexOf(song),
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: mixes['Quick Picks']!,
@@ -196,16 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.explore_rounded,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...mixes['Discover Mix']!.take(5).map((song) {
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: mixes['Discover Mix']!,
-                              index: mixes['Discover Mix']!.indexOf(song),
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: mixes['Discover Mix']!,
@@ -227,16 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.album_rounded,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...entry.value.take(5).map((song) {
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: entry.value,
-                              index: entry.value.indexOf(song),
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: entry.value,
@@ -255,16 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.nightlight_round,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...entry.value.take(5).map((song) {
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: entry.value,
-                              index: entry.value.indexOf(song),
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: entry.value,
@@ -279,13 +237,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         HorizontalScrollSection(
                           title: AppLocalizations.of(context)!.recentlyPlayed,
                           padding: EdgeInsets.symmetric(horizontal: hPad),
-                          cardSize: isDesktop ? 180 : 150,
+                          cardSize: 150,
                           children: libraryProvider.recentAlbums
                               .take(10)
                               .map(
                                 (album) => AlbumCard(
                                   album: album,
-                                  size: isDesktop ? 180 : 150,
+                                  size: 150,
                                   onTap: () => _openAlbum(context, album.id),
                                 ),
                               )
@@ -298,13 +256,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         HorizontalScrollSection(
                           title: AppLocalizations.of(context)!.yourPlaylists,
                           padding: EdgeInsets.symmetric(horizontal: hPad),
-                          cardSize: isDesktop ? 180 : 150,
+                          cardSize: 150,
                           children: libraryProvider.playlists
                               .take(10)
                               .map(
                                 (playlist) => _PlaylistCard(
                                   playlist: playlist,
-                                  size: isDesktop ? 180 : 150,
+                                  size: 150,
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -327,19 +285,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppLocalizations.of(context)!.madeForYou,
                           hPad: hPad,
                         ),
-                        if (isDesktop) _DesktopSongTableHeader(hPad: hPad),
                         ...libraryProvider.randomSongs.take(5).map((song) {
                           final index = libraryProvider.randomSongs.indexOf(
                             song,
                           );
-                          if (isDesktop) {
-                            return _DesktopSongRow(
-                              song: song,
-                              playlist: libraryProvider.randomSongs,
-                              index: index,
-                              hPad: hPad,
-                            );
-                          }
                           return SongTile(
                             song: song,
                             playlist: libraryProvider.randomSongs,
@@ -408,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLoadingState(bool isDesktop, double hPad) {
+  Widget _buildLoadingState(double hPad) {
     return Column(
       children: [
         const SizedBox(height: 16),
@@ -417,12 +366,12 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: isDesktop ? 3 : 2,
+            crossAxisCount: 2,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
             childAspectRatio: 3.5,
             children: List.generate(
-              isDesktop ? 6 : 6,
+              6,
               (_) => Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[800],
@@ -435,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 24),
         HorizontalShimmerList(
           count: 5,
-          child: AlbumCardShimmer(size: isDesktop ? 180 : 150),
+          child: AlbumCardShimmer(size: 150),
         ),
       ],
     );
@@ -449,22 +398,20 @@ class _HomeScreenState extends State<HomeScreen> {
 class _QuickAccessGrid extends StatelessWidget {
   final List<dynamic> albums;
   final List<dynamic> playlists;
-  final bool isDesktop;
   final double hPad;
 
   const _QuickAccessGrid({
     required this.albums,
     required this.playlists,
-    this.isDesktop = false,
     this.hPad = 16,
   });
 
   @override
   Widget build(BuildContext context) {
-    final raw = [...albums, ...playlists].take(isDesktop ? 9 : 6).toList();
+    final raw = [...albums, ...playlists].take(6).toList();
 
     final items =
-        (!isDesktop && raw.length.isOdd) ? raw.sublist(0, raw.length - 1) : raw;
+        (raw.length.isOdd) ? raw.sublist(0, raw.length - 1) : raw;
 
     if (items.isEmpty) {
       return const SizedBox.shrink();
@@ -475,25 +422,6 @@ class _QuickAccessGrid extends StatelessWidget {
       listen: false,
     );
 
-    if (isDesktop) {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: hPad),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 280,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 3.2,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) =>
-              _buildTile(context, items[index], subsonicService),
-        ),
-      );
-    }
-
     const tileHeight = 56.0;
     const spacing = 8.0;
 
@@ -503,8 +431,7 @@ class _QuickAccessGrid extends StatelessWidget {
         builder: (context, constraints) {
           final tileWidth = (constraints.maxWidth - spacing) / 2;
           final ratio = tileWidth / tileHeight;
-          return GridView.builder(
-            shrinkWrap: true,
+          return GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -820,43 +747,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _DesktopSongTableHeader extends StatelessWidget {
-  final double hPad;
-  const _DesktopSongTableHeader({this.hPad = 16});
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final labelStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.1,
-      color: isDark ? Colors.white38 : Colors.black38,
-    );
-    return Padding(
-      padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 32,
-            child: Text('#', style: labelStyle, textAlign: TextAlign.center),
-          ),
-          const SizedBox(width: 12),
-          const SizedBox(width: 40),
-          const SizedBox(width: 12),
-          Expanded(flex: 5, child: Text('TITLE', style: labelStyle)),
-          Expanded(flex: 3, child: Text('ALBUM', style: labelStyle)),
-          const SizedBox(width: 40),
-          SizedBox(
-            width: 52,
-            child: Text('TIME', style: labelStyle, textAlign: TextAlign.right),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-    );
-  }
-}
 
 class _DesktopSongRow extends StatefulWidget {
   final Song song;

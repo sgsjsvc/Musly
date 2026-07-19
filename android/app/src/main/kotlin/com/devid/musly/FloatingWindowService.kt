@@ -143,13 +143,22 @@ class FloatingWindowService : Service() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             val backgroundDrawable = android.graphics.drawable.GradientDrawable().apply {
-                setColor(Color.parseColor("#991C1C1E"))
-                cornerRadius = 16 * density
+                orientation = android.graphics.drawable.GradientDrawable.Orientation.TL_BR
+                colors = intArrayOf(
+                    Color.parseColor("#D6222226"), // frosted glass top-left
+                    Color.parseColor("#B0161618")  // frosted glass bottom-right
+                )
+                cornerRadius = 18 * density
+                setStroke((1 * density).toInt(), Color.parseColor("#3BFFFFFF")) // light refracting border
             }
             background = backgroundDrawable
-            setPadding((12 * density).toInt(), (8 * density).toInt(),
-                       (12 * density).toInt(), (8 * density).toInt())
+            setPadding((14 * density).toInt(), (10 * density).toInt(),
+                       (14 * density).toInt(), (10 * density).toInt())
             gravity = Gravity.CENTER_VERTICAL
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                elevation = 12f * density
+                outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+            }
         }
 
         // ── Play / Pause button ──────────────────────────────────────

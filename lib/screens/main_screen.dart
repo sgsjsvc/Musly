@@ -15,7 +15,6 @@ import '../services/usage_time_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
 import '../widgets/widgets.dart';
-import '../widgets/support_dialog.dart';
 import '../l10n/app_localizations.dart';
 import 'home_screen.dart';
 import 'library_screen.dart';
@@ -114,20 +113,11 @@ class _MainScreenState extends State<MainScreen> {
 
       final usageService = UsageTimeService();
       if (usageService.shouldShowDialog) {
-        _showSupportDialog();
       } else {
         // Continue checking
         _startUsageTimeChecker();
       }
     });
-  }
-
-  void _showSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const SupportDialog(),
-      barrierDismissible: true,
-    );
   }
 
   Future<void> _checkForUpdate() async {
@@ -355,70 +345,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isLocalMode = authProvider.isLocalOnlyMode;
-
-    if (_isDesktop) {
-      return Scaffold(
-        body: Column(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  DesktopNavigationSidebar(
-                    selectedIndex: _currentIndex,
-                    onDestinationSelected: (index) {
-                      setState(() => _currentIndex = index);
-                      NavigationHelper.desktopNavigatorKey.currentState
-                          ?.popUntil((route) => route.isFirst);
-                    },
-                    navigatorKey: NavigationHelper.desktopNavigatorKey,
-                  ),
-                  Expanded(
-                    child: Navigator(
-                      key: NavigationHelper.desktopNavigatorKey,
-                      onGenerateRoute: (settings) {
-                        return PageRouteBuilder(
-                          pageBuilder: (ctx, anim, _) => IndexedStack(
-                            index: _currentIndex,
-                            children: _screens,
-                          ),
-                          transitionsBuilder: (ctx, animation, _, child) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  if (_showRightSidebar)
-                    Selector<PlayerProvider, bool>(
-                      selector: (_, p) =>
-                          p.currentSong != null || p.isPlayingRadio,
-                      builder: (context, hasCurrentSong, _) {
-                        return hasCurrentSong
-                            ? const RightSidebar()
-                            : const SizedBox.shrink();
-                      },
-                    ),
-                ],
-              ),
-            ),
-            Selector<PlayerProvider, bool>(
-              selector: (_, p) => p.currentSong != null || p.isPlayingRadio,
-              builder: (context, hasCurrentSong, _) {
-                return hasCurrentSong
-                    ? DesktopPlayerBar(
-                        navigatorKey: NavigationHelper.desktopNavigatorKey,
-                      )
-                    : const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
-      );
-    }
-
     final bool liquidGlass = Provider.of<ThemeService>(context).liquidGlass;
     return Selector<PlayerProvider, bool>(
       selector: (_, p) => p.currentSong != null || p.isPlayingRadio,
@@ -430,6 +356,7 @@ class _MainScreenState extends State<MainScreen> {
             _handleBackButton();
           },
           child: Scaffold(
+            extendBody: true,
             resizeToAvoidBottomInset: false,
             body: Column(
               children: [
@@ -538,15 +465,16 @@ class _MainScreenState extends State<MainScreen> {
                     },
                   ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (hasCurrentSong) MiniPlayer(onTap: _openNowPlaying),
-                    liquidGlass
-                        ? _buildGlassBottomNav(context)
-                        : _buildBottomNav(context),
-                  ],
-                ),
+              ],
+            ),
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasCurrentSong && MediaQuery.of(context).orientation == Orientation.portrait)
+                  MiniPlayer(onTap: _openNowPlaying),
+                liquidGlass
+                    ? _buildGlassBottomNav(context, hasCurrentSong)
+                    : _buildBottomNav(context, hasCurrentSong),
               ],
             ),
           ),
@@ -570,30 +498,12 @@ class _MainScreenState extends State<MainScreen> {
     SystemNavigator.pop();
   }
 
-  Widget _buildGlassBottomNav(BuildContext context) {
+  Widget _buildGlassBottomNav(BuildContext context, bool hasCurrentSong) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = theme.colorScheme.primary;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     final l10n = AppLocalizations.of(context)!;
-
-    final items = [
-      (
-        icon: CupertinoIcons.music_house,
-        activeIcon: CupertinoIcons.music_house_fill,
-        label: l10n.home,
-      ),
-      (
-        icon: CupertinoIcons.collections,
-        activeIcon: CupertinoIcons.collections_solid,
-        label: l10n.library,
-      ),
-      (
-        icon: CupertinoIcons.search,
-        activeIcon: CupertinoIcons.search,
-        label: l10n.search,
-      ),
-    ];
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 4, 12, safeBottom > 0 ? safeBottom : 12),
@@ -611,9 +521,9 @@ class _MainScreenState extends State<MainScreen> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
-              height: 62,
+              height: 64,
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.5)
@@ -627,71 +537,17 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               child: Row(
-                children: List.generate(items.length, (idx) {
-                  final item = items[idx];
-                  final isSelected = _currentIndex == idx;
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        final navigatorState =
-                            NavigationHelper.mobileNavigatorKey.currentState;
-                        navigatorState?.popUntil((route) => route.isFirst);
-
-                        if (idx == 2) {
-                          final now = DateTime.now();
-                          if (now.difference(_lastSearchTap).inSeconds > 3) {
-                            _searchTapCount = 0;
-                          }
-                          _searchTapCount++;
-                          _lastSearchTap = now;
-                          if (_searchTapCount >= 11) {
-                            _searchTapCount = 0;
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const FantasyScreen(),
-                              ),
-                            );
-                            return;
-                          }
-                        } else {
-                          _searchTapCount = 0;
-                        }
-
-                        setState(() => _currentIndex = idx);
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 150),
-                            child: Icon(
-                              isSelected ? item.activeIcon : item.icon,
-                              key: ValueKey(isSelected),
-                              color: isSelected
-                                  ? accent
-                                  : (isDark ? Colors.white54 : Colors.black38),
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: isSelected
-                                  ? accent
-                                  : (isDark ? Colors.white54 : Colors.black38),
-                            ),
-                          ),
-                        ],
-                      ),
+                children: [
+                  _buildNavItem(context, 0, CupertinoIcons.music_house, CupertinoIcons.music_house_fill, l10n.home),
+                  if (isLandscape)
+                    Expanded(
+                      flex: 3,
+                      child: hasCurrentSong ? MiniPlayer(onTap: _openNowPlaying, isEmbedded: true) : const SizedBox.shrink(),
                     ),
-                  );
-                }),
+                  _buildNavItem(context, 1, CupertinoIcons.collections, CupertinoIcons.collections_solid, l10n.library),
+                  if (!isLandscape)
+                    _buildNavItem(context, 2, CupertinoIcons.search, CupertinoIcons.search, l10n.search),
+                ],
               ),
             ),
           ),
@@ -700,12 +556,15 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
+  Widget _buildBottomNav(BuildContext context, bool hasCurrentSong) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     final l10n = AppLocalizations.of(context)!;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
+      padding: EdgeInsets.only(bottom: safeBottom),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         border: Border(
@@ -715,50 +574,81 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            final navigatorState =
-                NavigationHelper.mobileNavigatorKey.currentState;
-            navigatorState?.popUntil((route) => route.isFirst);
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            _buildNavItem(context, 0, CupertinoIcons.music_house, CupertinoIcons.music_house_fill, l10n.home),
+            if (isLandscape)
+              Expanded(
+                flex: 3,
+                child: hasCurrentSong ? MiniPlayer(onTap: _openNowPlaying, isEmbedded: true) : const SizedBox.shrink(),
+              ),
+            _buildNavItem(context, 1, CupertinoIcons.collections, CupertinoIcons.collections_solid, l10n.library),
+            if (!isLandscape)
+              _buildNavItem(context, 2, CupertinoIcons.search, CupertinoIcons.search, l10n.search),
+          ],
+        ),
+      ),
+    );
+  }
 
-            if (index == 2) {
-              final now = DateTime.now();
-              if (now.difference(_lastSearchTap).inSeconds > 3) {
-                _searchTapCount = 0;
-              }
-              _searchTapCount++;
-              _lastSearchTap = now;
-              if (_searchTapCount >= 11) {
-                _searchTapCount = 0;
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const FantasyScreen()),
-                );
-                return;
-              }
-            } else {
+  Widget _buildNavItem(BuildContext context, int index, IconData icon, IconData activeIcon, String label) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final isSelected = _currentIndex == index;
+
+    return Expanded(
+      flex: 1,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final navigatorState = NavigationHelper.mobileNavigatorKey.currentState;
+          navigatorState?.popUntil((route) => route.isFirst);
+          
+          if (index == 2) {
+            final now = DateTime.now();
+            if (now.difference(_lastSearchTap).inSeconds > 3) {
               _searchTapCount = 0;
             }
-
-            setState(() => _currentIndex = index);
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(CupertinoIcons.music_house),
-              activeIcon: const Icon(CupertinoIcons.music_house_fill),
-              label: l10n.home,
+            _searchTapCount++;
+            _lastSearchTap = now;
+            if (_searchTapCount >= 11) {
+              _searchTapCount = 0;
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FantasyScreen()),
+              );
+              return;
+            }
+          } else {
+            _searchTapCount = 0;
+          }
+          
+          setState(() => _currentIndex = index);
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected
+                  ? accent
+                  : (isDark ? Colors.white54 : Colors.black54),
+              size: 24,
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(CupertinoIcons.collections),
-              activeIcon: const Icon(CupertinoIcons.collections_solid),
-              label: l10n.library,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(CupertinoIcons.search),
-              activeIcon: const Icon(CupertinoIcons.search),
-              label: l10n.search,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? accent
+                    : (isDark ? Colors.white54 : Colors.black54),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

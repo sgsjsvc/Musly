@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart' hide RepeatMode;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:provider/provider.dart';
 import '../models/song.dart';
@@ -16,14 +14,12 @@ import 'album_artwork.dart';
 class MiniPlayer extends StatelessWidget {
   final VoidCallback? onTap;
 
-  const MiniPlayer({super.key, this.onTap});
+  final bool isEmbedded;
+
+  const MiniPlayer({super.key, this.onTap, this.isEmbedded = false});
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop =
-        !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
-    if (isDesktop) return const SizedBox.shrink();
-
     return Selector<PlayerProvider, (Song?, RadioStation?, bool)>(
       selector: (_, p) =>
           (p.currentSong, p.currentRadioStation, p.isPlayingRadio),
@@ -67,6 +63,16 @@ class MiniPlayer extends StatelessWidget {
         );
 
         if (isGlass) {
+          if (isEmbedded) {
+            return GestureDetector(
+              onTap: onTap,
+              child: Container(
+                height: 64,
+                color: Colors.transparent,
+                child: row,
+              ),
+            );
+          }
           return RepaintBoundary(
             child: Container(
               margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
@@ -83,7 +89,7 @@ class MiniPlayer extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: GestureDetector(
                     onTap: onTap,
                     child: Container(

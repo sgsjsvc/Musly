@@ -78,8 +78,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.8,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
+                delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) =>
                       const AlbumCardShimmer(size: double.infinity),
                   childCount: 8,
                 ),
@@ -135,7 +134,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.75,
                 ),
-                delegate: SliverChildBuilderDelegate((context, index) {
+                delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                   final album = _albums![index];
                   return AlbumCard(
                     album: album,

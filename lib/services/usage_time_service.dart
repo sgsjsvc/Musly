@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/support_dialog.dart';
 
 /// Service to track app usage time and show support dialog after 8 minutes
 class UsageTimeService extends ChangeNotifier with WidgetsBindingObserver {
@@ -85,7 +84,6 @@ class UsageTimeService extends ChangeNotifier with WidgetsBindingObserver {
         
         // Check if we should show the dialog
         if (shouldShowDialog) {
-          _showSupportDialog();
         }
       }
       _sessionStartTime = null;
@@ -112,26 +110,7 @@ class UsageTimeService extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     if (shouldShowDialog) {
-      _showSupportDialog();
     }
-  }
-
-  void _showSupportDialog() async {
-    _dialogShown = true;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefsKeyDialogShown, true);
-
-    // Use a delayed post frame callback to show the dialog
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final context = _getContext();
-      if (context != null) {
-        showDialog(
-          context: context,
-          builder: (context) => const SupportDialog(),
-          barrierDismissible: true,
-        );
-      }
-    });
   }
 
   BuildContext? _getContext() {

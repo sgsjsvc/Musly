@@ -36,6 +36,8 @@ class AndroidSystemService {
   VoidCallback? onAudioFocusLossTransientCanDuck;
 
   VoidCallback? onBecomingNoisy;
+  VoidCallback? onScreenOn;
+  VoidCallback? onScreenOff;
 
   bool _showOnLockScreen = true;
   // Disable custom audio focus handling — audio_session plugin manages it
@@ -138,6 +140,12 @@ class AndroidSystemService {
         break;
       case 'becomingNoisy':
         onBecomingNoisy?.call();
+        break;
+      case 'screenOn':
+        onScreenOn?.call();
+        break;
+      case 'screenOff':
+        onScreenOff?.call();
         break;
     }
   }

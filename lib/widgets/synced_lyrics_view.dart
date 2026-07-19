@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
-import 'package:window_manager/window_manager.dart';
 import '../models/lyrics.dart';
 import '../models/song.dart';
 import '../providers/player_provider.dart';
@@ -156,16 +155,10 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
 
   late Song _song;
   bool _isPlaying = false;
-  bool _isFullscreen = false;
   bool _showReturnButton = false;
 
   final AppleMusicLyricsController _lyricsController =
       AppleMusicLyricsController();
-
-  bool get _isDesktop {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-  }
 
   @override
   void initState() {
@@ -209,7 +202,6 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
     _bgAnimationController.dispose();
     _lyricsController.removeListener(_onLyricsChanged);
     _lyricsController.dispose();
-    if (_isDesktop && _isFullscreen) _setWindowFullscreen(false);
     super.dispose();
   }
 
@@ -234,18 +226,6 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
     // Disabled for lyrics view to save battery
     // High refresh rate causes significant battery drain with scrolling lyrics
     return;
-  }
-
-  Future<void> _setWindowFullscreen(bool enable) async {
-    if (!_isDesktop) return;
-    unawaited(() async {
-      try {
-        await windowManager.setFullScreen(enable);
-        await windowManager.focus();
-      } catch (e) {
-        debugPrint('Failed to toggle fullscreen: $e');
-      }
-    }());
   }
 
   @override
@@ -493,171 +473,13 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
               child: Container(color: Colors.black.withValues(alpha: 0.6)),
             ),
           ),
-          if (_isDesktop)
-            _isFullscreen
-                ? _buildFullscreenContent(context, imageUrl)
-                : _buildDesktopContent(context, imageUrl)
-          else
-            _buildMobileContent(context),
-          if (_isDesktop)
-            Positioned(
-              top: 24,
-              right: 24,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildIconButton(
-                    icon: _isFullscreen
-                        ? Icons.fullscreen_exit_rounded
-                        : Icons.fullscreen_rounded,
-                    onTap: () {
-                      final next = !_isFullscreen;
-                      setState(() => _isFullscreen = next);
-                      _setWindowFullscreen(next);
-                    },
-                    tooltip: _isFullscreen
-                        ? AppLocalizations.of(context)!.exitFullscreen
-                        : AppLocalizations.of(context)!.fullscreen,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildIconButton(
-                    icon: Icons.close,
-                    onTap: () {
-                      _setWindowFullscreen(false);
-                      widget.onClose?.call();
-                    },
-                  ),
-                ],
-              ),
-            ),
+          _buildMobileContent(context),
         ],
       ),
     );
   }
 
-  Widget _buildIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    String? tooltip,
-  }) {
-    return IconButton(
-      onPressed: onTap,
-      tooltip: tooltip,
-      icon: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
 
-  Widget _buildDesktopContent(BuildContext context, String imageUrl) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final artSize =
-        math.min(screenWidth * 0.25, screenHeight * 0.45).clamp(200.0, 380.0);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: artSize + 40,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RepaintBoundary(
-                  child: SizedBox(
-                    height: artSize,
-                    width: artSize,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
-                          ),
-                        ],
-                        color: Colors.grey[900],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: isLocalFilePath(imageUrl)
-                            ? Image.file(
-                                File(imageUrl),
-                                fit: BoxFit.cover,
-                                errorBuilder: (ctx, err, stack) =>
-                                    Container(color: Colors.grey[900]),
-                              )
-                            : CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                memCacheWidth: 1200,
-                                memCacheHeight: 1200,
-                                fadeInDuration: Duration.zero,
-                                fadeOutDuration: Duration.zero,
-                                useOldImageOnUrlChange: true,
-                                placeholder: (ctx, url) =>
-                                    Container(color: Colors.grey[900]),
-                                errorWidget: (ctx, err, stack) =>
-                                    Container(color: Colors.grey[900]),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  _song.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                if (_song.artist != null)
-                  Text(
-                    _song.artist!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 48),
-          Expanded(child: _buildLyricsContent()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFullscreenContent(BuildContext context, String imageUrl) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 80.0, vertical: 48.0),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: _buildLyricsContent(isFullscreen: true),
-        ),
-      ),
-    );
-  }
 
   Widget _buildMobileContent(BuildContext context) {
     return SafeArea(
@@ -671,7 +493,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
     );
   }
 
-  Widget _buildLyricsContent({bool isFullscreen = false}) {
+  Widget _buildLyricsContent() {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -725,10 +547,10 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
             onUserScroll: () {
               setState(() => _showReturnButton = true);
             },
-            fontSize: isFullscreen ? 32.0 : (_isDesktop ? 26.0 : 24.0),
-            lineGap: isFullscreen ? 32.0 : 24.0,
+            fontSize: 24.0,
+            lineGap: 24.0,
             enableBlur: true,
-            alignPosition: isFullscreen ? 0.40 : 0.42,
+            alignPosition: 0.42,
           ),
         ),
         if (_showReturnButton)
@@ -1181,8 +1003,7 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
               stops: const [0.0, 0.10, 0.90, 1.0],
             ).createShader(rect),
             blendMode: BlendMode.dstIn,
-            child: ListView.builder(
-              controller: _scrollController,
+            child: ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.only(
                 left: 28,

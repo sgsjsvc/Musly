@@ -223,7 +223,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               }
 
               return SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
+                delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                   final item = items[index];
                   return _buildLibraryItem(context, item);
                 }, childCount: items.length),

@@ -418,8 +418,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
             ),
             const Divider(),
             Expanded(
-              child: ReorderableListView.builder(
-                padding: const EdgeInsets.only(bottom: 150),
+              child: ReorderableListView.builder(padding: const EdgeInsets.only(bottom: 150),
                 itemCount: _playlist!.songs!.length,
                 buildDefaultDragHandles: false,
                 onReorder: _onSongReordered,
@@ -640,8 +639,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
             )
           else if (_isSelecting)
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
+              delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                   final song = _playlist!.songs![index];
                   final isSelected = _selectedIndices.contains(index);
                   return CheckboxListTile(
@@ -680,8 +678,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
+              delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                   final song = _playlist!.songs![index];
                   final tile = SongTile(
                     song: song,

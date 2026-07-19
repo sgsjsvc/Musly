@@ -378,34 +378,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (Platform.isIOS) {
-      setState(() {
-        _isScanning = true;
-        _scanProgress = 0.0;
-        _scanStatus = '选择您的音乐文件...';
-      });
-      try {
-        final added = await localService.pickAndAddFiles();
-        if (mounted) {
-          if (localService.songs.isNotEmpty) {
-            final authProvider = Provider.of<AuthProvider>(context, listen: false);
-            await authProvider.setLocalOnlyMode(true);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(added == 0
-                    ? '未选择文件。点击"使用本地文件"选择您的音乐文件。'
-                    : AppLocalizations.of(context)!.noMusicFilesFound),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        }
-      } finally {
-        if (mounted) setState(() => _isScanning = false);
-      }
-      return;
-    }
 
     setState(() {
       _isScanning = true;
@@ -1041,7 +1013,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  if (!Platform.isIOS) SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: OutlinedButton.icon(
@@ -1076,7 +1048,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  if (!Platform.isIOS && _isScanning) ...[
+                  if (_isScanning) ...[
                     const SizedBox(height: 12),
                     LinearProgressIndicator(
                       value: _scanProgress > 0 ? _scanProgress : null,

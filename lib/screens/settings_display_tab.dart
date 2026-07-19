@@ -37,12 +37,10 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
 
   ThemeMode _themeMode = ThemeMode.system;
   AccentColor _accentColor = AccentColor.red;
-  bool _liquidGlass = false;
+  bool _liquidGlass = true;
+  double _fontScale = 1.0;
 
-  bool get _isDesktop {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-  }
+
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -58,10 +56,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
     if (!mounted) return;
     final themeService = Provider.of<ThemeService>(context, listen: false);
 
-    bool ignoringBattery = false;
-    if (!kIsWeb && Platform.isAndroid) {
-      ignoringBattery = await FloatingWindowController.checkBatteryOptimization();
-    }
+    bool ignoringBattery = await FloatingWindowController.checkBatteryOptimization();
 
     setState(() {
       _showVolumeSlider = _playerUiSettings.getShowVolumeSlider();
@@ -77,6 +72,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
       _themeMode = themeService.themeMode;
       _accentColor = themeService.accentColor;
       _liquidGlass = themeService.liquidGlass;
+      _fontScale = themeService.fontScale;
       _isIgnoringBattery = ignoringBattery;
     });
   }
@@ -89,7 +85,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
       children: [
         _buildSection(
           title: AppLocalizations.of(context)!.appearanceSection.toUpperCase(),
-          children: [_buildAppearanceEditor()],
+          children: [_buildAppearanceEditor(), _buildDivider(), _buildFontScaleSelector()],
         ),
         const SizedBox(height: 24),
         _buildSection(
@@ -113,18 +109,12 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
             _buildMiniPlayerRepeatToggle(),
             _buildDivider(),
             _buildMiniPlayerShuffleToggle(),
-            if (!Platform.isIOS) ...[
-              _buildDivider(),
-              _buildFloatingWindowToggle(),
-              _buildDivider(),
-              ..._buildBootAutoStartWidgets(),
-            ],
-            if (_isDesktop) ...[
-              _buildDivider(),
-              _buildDiscordRpcToggle(),
-              _buildDivider(),
-              _buildDiscordRpcStateStyleSelector(),
-            ],
+            _buildDivider(),
+            _buildFloatingWindowToggle(),
+            _buildDivider(),
+            ..._buildBootAutoStartWidgets(),
+            _buildDivider(),
+            _buildCarDrivingModeToggle(),
           ],
         ),
         const SizedBox(height: 24),
@@ -163,6 +153,69 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
         ),
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  Widget _buildFontScaleSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '全局字体缩放 (Font Scale)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: _isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              Text(
+                'x',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('A', style: TextStyle(fontSize: 12)),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 4,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                    activeTrackColor: Theme.of(context).colorScheme.primary,
+                    inactiveTrackColor: (_isDark ? Colors.white : Colors.black).withOpacity(0.1),
+                    thumbColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  child: Slider(
+                    value: _fontScale,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15, // 0.1 steps between 0.5 and 2.0
+                    onChanged: (value) {
+                      setState(() {
+                        _fontScale = value;
+                      });
+                      Provider.of<ThemeService>(context, listen: false).setFontScale(value);
+                    },
+                  ),
+                ),
+              ),
+              const Text('A', style: TextStyle(fontSize: 24)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -558,7 +611,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
       _buildBootAutoStartToggle(),
     ];
 
-    if (isEnabled && !kIsWeb && Platform.isAndroid) {
+    if (isEnabled) {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(left: 32, right: 16),
@@ -663,6 +716,49 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
               });
             }
           }
+        },
+      ),
+    );
+  }
+
+  Widget _buildCarDrivingModeToggle() {
+    final playerProvider = Provider.of<PlayerProvider>(context, listen: true);
+    final isEnabled = false;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF9500), Color(0xFFFFCC00)],
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.directions_car,
+          color: Colors.white,
+          size: 18,
+        ),
+      ),
+      title: const Text(
+        '车载驾驶模式',
+        style: TextStyle(fontSize: 16),
+      ),
+      subtitle: Text(
+        '启用超大触控、大字号高对比度排版并自动压缩图片降低内存',
+        style: TextStyle(
+          fontSize: 13,
+          color: _isDark
+              ? AppTheme.darkSecondaryText
+              : AppTheme.lightSecondaryText,
+        ),
+      ),
+      trailing: CupertinoSwitch(
+        value: isEnabled,
+        activeTrackColor: Theme.of(context).colorScheme.primary,
+        onChanged: (value) async {
         },
       ),
     );
@@ -1200,110 +1296,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
     );
   }
 
-  Widget _buildDiscordRpcToggle() {
-    return Consumer<PlayerProvider>(
-      builder: (context, player, _) {
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF5865F2), 
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              CupertinoIcons.game_controller,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          title: Text(
-            AppLocalizations.of(context)!.discordStatus,
-            style: const TextStyle(fontSize: 16),
-          ),
-          subtitle: Text(
-            AppLocalizations.of(context)!.discordStatusSubtitle,
-            style: TextStyle(
-              fontSize: 13,
-              color: _isDark
-                  ? AppTheme.darkSecondaryText
-                  : AppTheme.lightSecondaryText,
-            ),
-          ),
-          trailing: CupertinoSwitch(
-            value: player.discordRpcEnabled,
-            activeTrackColor: Theme.of(context).colorScheme.primary,
-            onChanged: (value) async {
-              await player.setDiscordRpcEnabled(value);
-              
-              setState(() {});
-            },
-          ),
-        );
-      },
-    );
-  }
 
-  Widget _buildDiscordRpcStateStyleSelector() {
-    final l10n = AppLocalizations.of(context)!;
-    final styles = [
-      ('artist', l10n.discordRpcStyleArtist),
-      ('song_title', l10n.discordRpcStyleSong),
-      ('app_name', l10n.discordRpcStyleApp),
-    ];
-    return Consumer<PlayerProvider>(
-      builder: (context, player, _) {
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF5865F2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              CupertinoIcons.text_bubble,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          title: Text(l10n.discordStatusText, style: const TextStyle(fontSize: 16)),
-          subtitle: Text(
-            l10n.discordStatusTextSubtitle,
-            style: TextStyle(
-              fontSize: 13,
-              color: _isDark
-                  ? AppTheme.darkSecondaryText
-                  : AppTheme.lightSecondaryText,
-            ),
-          ),
-          trailing: DropdownButton<String>(
-            value: player.discordRpcStateStyle,
-            underline: const SizedBox.shrink(),
-            items: styles
-                .map(
-                  (s) => DropdownMenuItem(
-                    value: s.$1,
-                    child: Text(s.$2, style: const TextStyle(fontSize: 14)),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value != null) player.setDiscordRpcStateStyle(value);
-            },
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildLanguageSelector() {
     return Consumer<LocaleService>(

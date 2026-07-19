@@ -120,8 +120,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('专辑')),
       body: _albums.isEmpty && _isLoading
-          ? GridView.builder(
-              padding: const EdgeInsets.all(16).copyWith(bottom: 150),
+          ? GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, padding: const EdgeInsets.all(16).copyWith(bottom: 150),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 180,
                 mainAxisSpacing: 16,
@@ -132,8 +131,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
               itemBuilder: (context, index) =>
                   const AlbumCardShimmer(size: double.infinity),
             )
-          : GridView.builder(
-              controller: _scrollController,
+          : GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, controller: _scrollController,
               padding: const EdgeInsets.all(16).copyWith(bottom: 150),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 180,

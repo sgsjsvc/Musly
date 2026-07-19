@@ -84,8 +84,7 @@ class _LikedAlbumsScreenState extends State<LikedAlbumsScreen> {
   }
 
   Widget _buildAlbumsGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16).copyWith(bottom: 150),
+    return GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, padding: const EdgeInsets.all(16).copyWith(bottom: 150),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 16,

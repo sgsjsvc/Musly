@@ -25,7 +25,6 @@ void main() {
         FakeCastService(),
         UpnpService(),
         MuslyAudioHandler(),
-        JukeboxService(),
         TranscodingService(),
       );
 

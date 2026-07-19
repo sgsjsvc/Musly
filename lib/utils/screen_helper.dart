@@ -58,14 +58,14 @@ class ScreenHelper {
   }
 
   static double miniPlayerIconSize(BuildContext context) {
-    return isSmallScreen(context) ? 20 : 24;
+    return isSmallScreen(context) ? 24 : 28;
   }
 
   static double miniPlayerPlayIconSize(BuildContext context) {
-    return isSmallScreen(context) ? 28 : 32;
+    return isSmallScreen(context) ? 32 : 36;
   }
 
   static double miniPlayerSkipIconSize(BuildContext context) {
-    return isSmallScreen(context) ? 24 : 28;
+    return isSmallScreen(context) ? 28 : 32;
   }
 }

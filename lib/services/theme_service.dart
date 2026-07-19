@@ -75,14 +75,17 @@ class ThemeService extends ChangeNotifier {
   static const String _keyThemeMode = 'app_theme_mode';
   static const String _keyAccentColor = 'app_accent_color';
   static const String _keyLiquidGlass = 'app_liquid_glass';
+  static const String _keyFontScale = 'app_font_scale';
 
   ThemeMode _themeMode = ThemeMode.system;
   AccentColor _accentColor = AccentColor.red;
-  bool _liquidGlass = false;
+  bool _liquidGlass = true;
+  double _fontScale = 1.0;
 
   ThemeMode get themeMode => _themeMode;
   AccentColor get accentColor => _accentColor;
   bool get liquidGlass => _liquidGlass;
+  double get fontScale => _fontScale;
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
@@ -93,7 +96,8 @@ class ThemeService extends ChangeNotifier {
     final colorKey = prefs.getString(_keyAccentColor) ?? 'red';
     _accentColor = AccentColorExt.fromKey(colorKey);
 
-    _liquidGlass = prefs.getBool(_keyLiquidGlass) ?? false;
+    _liquidGlass = prefs.getBool(_keyLiquidGlass) ?? true;
+    _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -115,6 +119,13 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyLiquidGlass, enabled);
+  }
+
+  Future<void> setFontScale(double scale) async {
+    _fontScale = scale;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_keyFontScale, scale);
   }
 
   static ThemeMode _themeModeFromKey(String key) {

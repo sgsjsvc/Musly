@@ -255,8 +255,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                       style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
+                    ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _topSongs.take(5).length,
                       itemBuilder: (context, index) {
@@ -294,8 +293,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                               style: theme.textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
-                            GridView.builder(
-                              shrinkWrap: true,
+                            GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -327,8 +325,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                               style: theme.textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
-                            GridView.builder(
-                              shrinkWrap: true,
+                            GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -360,8 +357,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                               style: theme.textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
-                            GridView.builder(
-                              shrinkWrap: true,
+                            GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   const SliverGridDelegateWithMaxCrossAxisExtent(

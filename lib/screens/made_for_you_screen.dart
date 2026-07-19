@@ -126,7 +126,7 @@ class _MadeForYouScreenState extends State<MadeForYouScreen> {
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
+              delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                 if (index == _songs!.length) {
                   return const SizedBox(height: 100);
                 }

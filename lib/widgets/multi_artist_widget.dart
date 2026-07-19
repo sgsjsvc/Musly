@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -49,10 +46,6 @@ class MultiArtistWidget extends StatelessWidget {
     this.onBeforeNavigate,
   });
 
-  static bool get _isDesktop {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-  }
 
   List<ArtistRef> _effectiveArtists() {
     if (artists != null && artists!.isNotEmpty) return artists!;
@@ -164,34 +157,7 @@ class MultiArtistWidget extends StatelessWidget {
       );
     }
 
-    // Multiple artists
-    if (_isDesktop) {
-      return Wrap(
-        children: [
-          for (int i = 0; i < effectiveArtists.length; i++) ...[
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => _navigate(context, effectiveArtists[i]),
-                child: Text(
-                  effectiveArtists[i].name,
-                  style: style?.copyWith(
-                    decoration: TextDecoration.underline,
-                    decorationColor: (style?.color ?? Colors.white)
-                        .withValues(alpha: 0.45),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            if (i < effectiveArtists.length - 1) Text(', ', style: style),
-          ],
-        ],
-      );
-    }
-
-    // Mobile: whole line opens bottom sheet
+    // Multiple artists: open bottom sheet
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -258,8 +224,7 @@ class ArtistsBottomSheet extends StatelessWidget {
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.45,
               ),
-              child: ListView.builder(
-                shrinkWrap: true,
+              child: ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                 itemCount: artists.length,
                 itemBuilder: (_, i) {
                   final artist = artists[i];

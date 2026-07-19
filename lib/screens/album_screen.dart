@@ -172,8 +172,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
               ),
             ),
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => const SongTileShimmer(),
+              delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) => const SongTileShimmer(),
                 childCount: 10,
               ),
             ),
@@ -329,7 +328,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 ),
               ),
               SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
+                delegate: SliverChildBuilderDelegate(addAutomaticKeepAlives: false, addRepaintBoundaries: false, (context, index) {
                   final song = _songs[index];
                   return SongTile(
                     song: song,

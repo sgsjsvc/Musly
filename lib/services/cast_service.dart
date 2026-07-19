@@ -69,8 +69,6 @@ class CastService extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    
-    if (Platform.isIOS) return;
     _sessionSubscription = _sessionManager.currentSessionStream.listen((
       session,
     ) {
@@ -86,13 +84,6 @@ class CastService extends ChangeNotifier {
     try {
       const appId = 'CC1AD845';
       GoogleCastOptions? options;
-      if (Platform.isIOS) {
-        options = IOSGoogleCastOptions(
-          GoogleCastDiscoveryCriteriaInitialize.initWithApplicationID(appId),
-        );
-      } else if (Platform.isAndroid) {
-        options = GoogleCastOptionsAndroid(appId: appId);
-      }
       if (options != null) {
         await GoogleCastContext.instance.setSharedInstanceWithOptions(options);
       }

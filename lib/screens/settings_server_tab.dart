@@ -6,12 +6,8 @@ import '../models/music_folder.dart';
 import '../models/server_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/player_provider.dart';
-import '../services/jukebox_service.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
-import '../utils/navigation_helper.dart';
-import 'jukebox_screen.dart';
-
 class SettingsServerTab extends StatefulWidget {
   const SettingsServerTab({super.key});
 
@@ -72,11 +68,7 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
           title: l10n.sectionMusicFolders,
           children: [_buildMusicFoldersButton()],
         ),
-        const SizedBox(height: 24),
-        _buildSection(
-          title: l10n.sectionJukebox,
-          children: [_buildJukeboxSection()],
-        ),
+
         const SizedBox(height: 24),
         _buildSection(
           title: l10n.sectionAccount,
@@ -216,80 +208,6 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
         onSave: (selected) async {
           await authProvider.updateSelectedMusicFolderIds(selected.toList());
         },
-      ),
-    );
-  }
-
-  Widget _buildJukeboxSection() {
-    final l10n = AppLocalizations.of(context)!;
-    return Consumer<JukeboxService>(
-      builder: (context, jukebox, _) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
-            ),
-            secondary: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF9500), Color(0xFFFF6000)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                CupertinoIcons.speaker_2,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            title: Text(l10n.jukeboxMode, style: const TextStyle(fontSize: 16)),
-            subtitle: Text(
-              l10n.jukeboxModeSubtitle,
-              style: TextStyle(
-                fontSize: 13,
-                color: _isDark
-                    ? AppTheme.darkSecondaryText
-                    : AppTheme.lightSecondaryText,
-              ),
-            ),
-            value: jukebox.enabled,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
-            onChanged: (v) => jukebox.setEnabled(v),
-          ),
-          if (jukebox.enabled) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 56),
-              child: Container(
-                height: 0.5,
-                color: _isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-              ),
-            ),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 4,
-              ),
-              leading: const SizedBox(width: 32),
-              title: Text(
-                l10n.openJukeboxController,
-                style: const TextStyle(fontSize: 16),
-              ),
-              trailing: Icon(
-                CupertinoIcons.chevron_right,
-                size: 16,
-                color: _isDark
-                    ? AppTheme.darkSecondaryText
-                    : AppTheme.lightSecondaryText,
-              ),
-              onTap: () =>
-                  NavigationHelper.push(context, const JukeboxScreen()),
-            ),
-          ],
-        ],
       ),
     );
   }

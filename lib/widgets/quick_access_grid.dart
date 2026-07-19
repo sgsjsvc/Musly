@@ -41,8 +41,7 @@ class QuickAccessGrid extends StatelessWidget {
 
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return GridView.builder(
-      shrinkWrap: true,
+    return GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columns,

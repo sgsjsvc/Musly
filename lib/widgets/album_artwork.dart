@@ -184,6 +184,8 @@ class AlbumArtwork extends StatelessWidget {
         artFile,
         key: ValueKey(coverArt),
         fit: BoxFit.contain,
+        cacheWidth: 400,
+        cacheHeight: 400,
         errorBuilder: (ctx, err, stack) => _buildPlaceholder(isDark),
       );
     }
@@ -201,6 +203,10 @@ class AlbumArtwork extends StatelessWidget {
           cacheKey: '${coverArt}_natural_$cacheSize',
           key: ValueKey('${coverArt}_natural_$cacheSize'),
           fit: BoxFit.contain,
+          memCacheWidth: 400,
+          memCacheHeight: 400,
+          maxWidthDiskCache: 400,
+          maxHeightDiskCache: 400,
           fadeInDuration: const Duration(milliseconds: 100),
           fadeOutDuration: Duration.zero,
           useOldImageOnUrlChange: true,

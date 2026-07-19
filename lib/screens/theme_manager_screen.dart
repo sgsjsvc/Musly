@@ -56,8 +56,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             themes.insert(0, defaultTheme);
           }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
+          return GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               childAspectRatio: 0.7,
@@ -190,8 +189,6 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
       final json = service.exportTheme(theme.id);
       final fileName = '${theme.themeName.replaceAll(' ', '_')}_theme.json';
 
-      if (Platform.isAndroid || Platform.isIOS) {
-        // Mobile: FilePicker.saveFile requires bytes on Android & iOS
         final bytes = Uint8List.fromList(utf8.encode(json));
         final result = await FilePicker.platform.saveFile(
           dialogTitle: 'Export Theme',
@@ -206,23 +203,6 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             SnackBar(content: Text('已导出到 $result')),
           );
         }
-      } else {
-        // Desktop: use file picker to save
-        final result = await FilePicker.platform.saveFile(
-          dialogTitle: 'Export Theme',
-          fileName: fileName,
-        );
-
-        if (result != null) {
-          final file = File(result);
-          await file.writeAsString(json);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('已导出到 $result')),
-            );
-          }
-        }
-      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

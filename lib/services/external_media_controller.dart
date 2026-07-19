@@ -4,10 +4,8 @@ import '../models/song.dart';
 import '../models/radio_station.dart';
 import 'android_auto_service.dart';
 import 'android_system_service.dart';
-import 'windows_system_service.dart';
 import 'bluetooth_avrcp_service.dart';
 import 'samsung_integration_service.dart';
-import 'discord_rpc_service.dart';
 import 'floating_window_controller.dart';
 import 'audio_handler.dart';
 import 'storage_service.dart';
@@ -46,14 +44,11 @@ class PlaybackSnapshot {
 class ExternalMediaController {
   final AndroidAutoService _androidAutoService = AndroidAutoService();
   final AndroidSystemService _androidSystemService = AndroidSystemService();
-  final WindowsSystemService _windowsService = WindowsSystemService();
   final BluetoothAvrcpService _bluetoothService = BluetoothAvrcpService();
   final SamsungIntegrationService _samsungService = SamsungIntegrationService();
-  late final DiscordRpcService _discordRpcService;
   final MuslyAudioHandler _audioHandler;
 
   bool _floatingWindowEnabled = false;
-  String _discordRpcStateStyle = 'artist';
 
   // ── Public getters for device info ─────────────────────────────────────
   bool get isSamsungDevice => _samsungService.isSamsungDevice;
@@ -61,8 +56,6 @@ class ExternalMediaController {
   bool get hasBluetoothDevice => _bluetoothService.hasConnectedDevices;
   List<BluetoothDeviceInfo> get connectedBluetoothDevices =>
       _bluetoothService.connectedDevices;
-  bool get discordRpcEnabled => _discordRpcService.enabled;
-  String get discordRpcStateStyle => _discordRpcStateStyle;
 
   // ── Callbacks from external controls back to the player ────────────────
   VoidCallback? onPlay;
@@ -82,6 +75,8 @@ class ExternalMediaController {
   VoidCallback? onAudioFocusLossTransientCanDuck;
   VoidCallback? onAudioFocusGain;
   VoidCallback? onBecomingNoisy;
+  VoidCallback? onScreenOn;
+  VoidCallback? onScreenOff;
   // Samsung edge panel
   Function(String)? onEdgePanelAction;
   // Samsung DeX mode changes
@@ -91,9 +86,7 @@ class ExternalMediaController {
   ExternalMediaController(
     StorageService storageService,
     this._audioHandler,
-  ) {
-    _discordRpcService = DiscordRpcService(storageService);
-  }
+  );
 
   /// Wire the audio handler and platform services so that transport commands
   /// from lock-screen / headset / car head-unit are forwarded to the player.
@@ -172,18 +165,11 @@ class ExternalMediaController {
           () => onAudioFocusGain?.call();
       _androidSystemService.onBecomingNoisy =
           () => onBecomingNoisy?.call();
+      _androidSystemService.onScreenOn = () => onScreenOn?.call();
+      _androidSystemService.onScreenOff = () => onScreenOff?.call();
     } catch (_) {}
 
-    // Windows SMTC
-    try {
-      await _windowsService.initialize();
-      _windowsService.onPlay = () => onPlay?.call();
-      _windowsService.onPause = () => onPause?.call();
-      _windowsService.onStop = () => onStop?.call();
-      _windowsService.onSkipNext = () => onSkipNext?.call();
-      _windowsService.onSkipPrevious = () => onSkipPrevious?.call();
-      _windowsService.onSeekTo = (pos) => onSeekTo?.call(pos);
-    } catch (_) {}
+
 
     // Bluetooth AVRCP
     try {
@@ -206,13 +192,6 @@ class ExternalMediaController {
           (action) => onEdgePanelAction?.call(action);
     } catch (_) {}
 
-    // Discord RPC (desktop only)
-    if (!kIsWeb &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-      try {
-        _discordRpcService.initialize();
-      } catch (_) {}
-    }
 
     // Floating Window (Android only)
     if (!kIsWeb && Platform.isAndroid) {
@@ -258,14 +237,7 @@ class ExternalMediaController {
       queueLength: snapshot.queueLength,
     );
 
-    // Windows SMTC
-    _windowsService.updatePlaybackState(
-      song: song,
-      artworkUrl: snapshot.artworkUrl,
-      duration: effectiveDuration,
-      position: snapshot.position,
-      isPlaying: snapshot.isPlaying,
-    );
+
 
     // Bluetooth AVRCP
     _bluetoothService.updateFromSong(
@@ -328,20 +300,13 @@ class ExternalMediaController {
       duration: effectiveDuration,
     );
 
-    _updateDiscordRpc(snapshot);
     updateNowPlaying(snapshot);
   }
 
   /// Update services for radio station playback.
-  void updateForRadio(RadioStation station) {
-    _windowsService.updatePlaybackState(
-      song: null,
-      isPlaying: true,
-      position: Duration.zero,
-      duration: Duration.zero,
-      artworkUrl: null,
-    );
 
+
+  void updateForRadio(RadioStation station) {
     _androidSystemService.updatePlaybackState(
       songId: station.id,
       title: station.name,
@@ -424,79 +389,12 @@ class ExternalMediaController {
     _bluetoothService.onDeviceDisconnected = callback;
   }
 
-  // ── Discord RPC ────────────────────────────────────────────────────────
-
-  void _updateDiscordRpc(PlaybackSnapshot snapshot) {
-    try {
-      final song = snapshot.song;
-      if (song == null) {
-        _discordRpcService.clearPresence();
-        return;
-      }
-
-      final int now = DateTime.now().millisecondsSinceEpoch;
-      final int startTimestamp = now - snapshot.position.inMilliseconds;
-      final int? endTimestamp =
-          snapshot.isPlaying && snapshot.duration.inMilliseconds > 0
-              ? startTimestamp + snapshot.duration.inMilliseconds
-              : null;
-
-      String stateText;
-      switch (_discordRpcStateStyle) {
-        case 'song_title':
-          stateText = song.title;
-          break;
-        case 'app_name':
-          stateText = 'Musly';
-          break;
-        case 'artist':
-        default:
-          stateText = song.artist ?? 'Unknown Artist';
-      }
-
-      _discordRpcService.updatePresence(
-        state: stateText,
-        details: song.title,
-        largeImageKey: 'musly_logo',
-        largeImageText: song.album,
-        smallImageKey: 'musly_logo',
-        smallImageText: snapshot.isPlaying ? 'Playing' : 'Paused',
-        startTime: startTimestamp,
-        endTime: endTimestamp,
-      );
-    } catch (_) {}
-  }
-
-  Future<void> setDiscordRpcEnabled(bool enabled) async {
-    try {
-      await _discordRpcService.setEnabled(enabled);
-    } catch (_) {}
-  }
-
-  Future<void> loadDiscordRpcStateStyle(StorageService storageService) async {
-    _discordRpcStateStyle = await storageService.getDiscordRpcStateStyle();
-  }
-
-  Future<void> setDiscordRpcStateStyle(
-      String style, StorageService storageService) async {
-    _discordRpcStateStyle = style;
-    await storageService.saveDiscordRpcStateStyle(style);
-  }
-
-  void clearDiscordPresence() {
-    try {
-      _discordRpcService.clearPresence();
-    } catch (_) {}
-  }
-
   // ── Dispose ────────────────────────────────────────────────────────────
 
   void dispose() {
     try { _androidAutoService.dispose(); } catch (_) {}
     try { _androidSystemService.dispose(); } catch (_) {}
-    try { _windowsService.dispose(); } catch (_) {}
     try { _bluetoothService.dispose(); } catch (_) {}
     try { _samsungService.dispose(); } catch (_) {}
-    try { _discordRpcService.shutdown(); } catch (_) {}
   }
 }

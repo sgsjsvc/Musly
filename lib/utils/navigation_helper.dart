@@ -1,22 +1,11 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class NavigationHelper {
   
   static final GlobalKey<NavigatorState> mobileNavigatorKey =
       GlobalKey<NavigatorState>();
-  static final GlobalKey<NavigatorState> desktopNavigatorKey =
-      GlobalKey<NavigatorState>();
 
-  static bool get isDesktop {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-  }
-
-  static GlobalKey<NavigatorState> get navigatorKey {
-    return isDesktop ? desktopNavigatorKey : mobileNavigatorKey;
-  }
+  static GlobalKey<NavigatorState> get navigatorKey => mobileNavigatorKey;
 
   static Future<T?> push<T>(BuildContext context, Widget page) {
     final nav = navigatorKey.currentState;
@@ -67,3 +56,4 @@ class NavigationHelper {
     _onTabChanged?.call(index);
   }
 }
+

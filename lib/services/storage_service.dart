@@ -203,4 +203,14 @@ class StorageService {
     final prefs = await _prefs;
     return prefs.getBool('boot_auto_start') ?? false;
   }
+
+  Future<void> saveCarDrivingMode(bool enabled) async {
+    final prefs = await _prefs;
+    await prefs.setBool('car_driving_mode', enabled);
+  }
+
+  Future<bool> getCarDrivingMode() async {
+    final prefs = await _prefs;
+    return prefs.getBool('car_driving_mode') ?? false;
+  }
 }

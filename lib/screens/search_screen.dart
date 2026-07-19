@@ -270,6 +270,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 )
               else
                 SliverToBoxAdapter(child: _buildBrowseCategories()),
+                SliverToBoxAdapter(child: const SizedBox(height: 120)),
             ],
           ),
           
@@ -377,8 +378,7 @@ class _SearchScreenState extends State<SearchScreen> {
         [Colors.red, Colors.pink],
         () => NavigationHelper.push(context, const FavoritesScreen()),
       ),
-      if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)
-        _CategoryItem(
+      _CategoryItem(
           AppLocalizations.of(context)!.categoryRadio,
           Icons.radio_rounded,
           [Colors.blue, Colors.indigo],
@@ -392,8 +392,7 @@ class _SearchScreenState extends State<SearchScreen> {
         SectionHeader(title: AppLocalizations.of(context)!.browseCategories),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: GridView.builder(
-            shrinkWrap: true,
+          child: GridView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 200,

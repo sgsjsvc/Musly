@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageCacheConfig {
-  static void configure() {
-
-    PaintingBinding.instance.imageCache.maximumSize = 100;
-    PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
+  static void configure({bool lowMemoryMode = false}) {
+    if (lowMemoryMode) {
+      PaintingBinding.instance.imageCache.maximumSize = 10;
+      PaintingBinding.instance.imageCache.maximumSizeBytes = 5 << 20; // 5MB
+    } else {
+      PaintingBinding.instance.imageCache.maximumSize = 15;
+      PaintingBinding.instance.imageCache.maximumSizeBytes = 10 << 20; // 10MB
+    }
   }
 }
 

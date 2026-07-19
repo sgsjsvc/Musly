@@ -51,6 +51,21 @@ object AndroidSystemPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
         }
     }
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_ON -> {
+                    Log.d(TAG, "Screen ON broadcast received (ACC Ignited)")
+                    sendEvent("screenOn", null)
+                }
+                Intent.ACTION_SCREEN_OFF -> {
+                    Log.d(TAG, "Screen OFF broadcast received (ACC Snuffed)")
+                    sendEvent("screenOff", null)
+                }
+            }
+        }
+    }
     
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -194,6 +209,16 @@ object AndroidSystemPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             } else {
                 ctx.registerReceiver(noisyReceiver, filter)
             }
+
+            val screenFilter = IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ctx.registerReceiver(screenReceiver, screenFilter, Context.RECEIVER_EXPORTED)
+            } else {
+                ctx.registerReceiver(screenReceiver, screenFilter)
+            }
         }
         
         Log.d(TAG, "AndroidSystemPlugin initialized")
@@ -269,7 +294,12 @@ object AndroidSystemPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         try {
             context?.unregisterReceiver(noisyReceiver)
         } catch (e: Exception) {
-            Log.e(TAG, "Error unregistering receiver: ${e.message}")
+            Log.e(TAG, "Error unregistering noisyReceiver: ${e.message}")
+        }
+        try {
+            context?.unregisterReceiver(screenReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unregistering screenReceiver: ${e.message}")
         }
         
         abandonAudioFocus()

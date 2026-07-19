@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter/cupertino.dart' hide RepeatMode;
 import 'package:flutter/services.dart';
@@ -316,128 +317,92 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     Curve animCurve,
   ) {
     final artworkLandMin = screenHeight < 280 ? 80.0 : 120.0;
-    final artworkLandMax = (screenWidth * 0.40).clamp(artworkLandMin, 500.0);
-    final artworkSize = (screenHeight * 0.75).clamp(
+    final artworkLandMax = (screenWidth * 0.35).clamp(artworkLandMin, 500.0);
+    final artworkSize = (screenHeight * 0.50).clamp(
       artworkLandMin,
       artworkLandMax,
     );
     _currentArtworkSize = artworkSize;
 
-    return Row(
+    return Stack(
       children: [
+        Row(
+      children: [
+        // Left side: Artwork and Controls
         Expanded(
           flex: 4,
-          child: Center(
-            child: AnimatedContainer(
-              duration: animDuration,
-              curve: animCurve,
-              transform: Matrix4.identity()
-                ..setTranslationRaw(0.0, -_morphProgress * 10, 0.0)
-                ..scaleByDouble(
-                  1.0 + _morphProgress * 0.03,
-                  1.0 + _morphProgress * 0.03,
-                  1.0,
-                  1.0,
-                ),
-              transformAlignment: Alignment.center,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showLyrics = true;
-                  });
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: screenHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _SwipeableAlbumArtwork(
+                currentImageUrl: _cachedImageUrl ?? '',
+                currentThumbnailUrl: _cachedThumbnailUrl,
+                previewImageUrl: _getPreviewArtworkUrl(_previewSong),
+                hasPreviewSong: _previewSong != null,
+                size: artworkSize,
+                swipeProgress: _swipeProgress,
+                horizontalDragOffset: _horizontalDragOffset,
+              ),
+              const SizedBox(height: 8),
+              _SongInfo(song: song),
+              const SizedBox(height: 2),
+              Selector<PlayerProvider, (Duration, Duration)>(
+                selector: (_, p) => (p.position, p.duration),
+                builder: (context, data, _) {
+                  final pos = data.$1;
+                  final dur = data.$2;
+                  final progress = dur.inMilliseconds > 0 ? (pos.inMilliseconds / dur.inMilliseconds).clamp(0.0, 1.0) : 0.0;
+                  return _ProgressBar(
+                    progress: progress,
+                    position: pos,
+                    duration: dur,
+                    formatDuration: _formatDuration,
+                  );
                 },
-                child: _SwipeableAlbumArtwork(
-                  currentImageUrl: _cachedImageUrl ?? '',
-                  currentThumbnailUrl: _cachedThumbnailUrl,
-                  previewImageUrl: _getPreviewArtworkUrl(_previewSong),
-                  hasPreviewSong: _previewSong != null,
-                  size: artworkSize,
-                  swipeProgress: _swipeProgress,
-                  horizontalDragOffset: _horizontalDragOffset,
+              ),
+              const SizedBox(height: 0),
+              const _PlaybackControls(),
+                  ],
                 ),
               ),
             ),
           ),
         ),
+        // Right side: Always Synced Lyrics
         Expanded(
-          flex: 5,
-          child: _showLyrics
-              ? Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: _PlayerHeader(
-                        albumName: song.album ??
-                            AppLocalizations.of(context)!.unknownAlbum,
-                        albumId: song.albumId,
-                        showLyricsButton: true,
-                        isLyricsActive: _showLyrics,
-                        onLyricsPressed: () {
-                          setState(() {
-                            _showLyrics = !_showLyrics;
-                          });
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: CompactLyricsView(
-                        key: ValueKey(song.id),
-                        song: song,
-                        onClose: () {
-                          setState(() {
-                            _showLyrics = false;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedOpacity(
-                        duration: animDuration,
-                        opacity: (1.0 - _morphProgress * 1.5).clamp(0.0, 1.0),
-                        child: _PlayerHeader(
-                          albumName: song.album ??
-                              AppLocalizations.of(context)!.unknownAlbum,
-                          albumId: song.albumId,
-                          showLyricsButton: true,
-                          isLyricsActive: _showLyrics,
-                          onLyricsPressed: () {
-                            setState(() {
-                              _showLyrics = !_showLyrics;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      AnimatedOpacity(
-                        duration: animDuration,
-                        opacity: (1.0 - _morphProgress * 1.2).clamp(0.0, 1.0),
-                        child: AnimatedContainer(
-                          duration: animDuration,
-                          curve: animCurve,
-                          transform: Matrix4.identity()
-                            ..setTranslationRaw(0, _morphProgress * 15, 0),
-                          child: _PlayerControls(
-                            formatDuration: _formatDuration,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+          flex: 6,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  child: CompactLyricsView(
+                    key: ValueKey(song.id),
+                    song: song,
                   ),
                 ),
+              ),
+            ),
+          ),
+        ),
+      ],
+        ),
+        Positioned(
+          top: 16,
+          left: 16,
+          child: IconButton(
+            icon: const Icon(CupertinoIcons.chevron_back, color: Colors.white, size: 32),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
       ],
     );
@@ -1929,6 +1894,9 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
   @override
   Widget build(BuildContext context) {
     final isPlaying = context.select<PlayerProvider, bool>((p) => p.isPlaying);
+    final carMode = false;
+    final targetSize = carMode ? 500 : 1200;
+
     return ThemeAwareBuilder(
       builder: (ctx, theme, isCustom) {
         if (isCustom && theme.animations.coverRotation) {
@@ -1969,7 +1937,7 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                               File(widget.imageUrl),
                               key: ValueKey(widget.imageUrl),
                               fit: BoxFit.contain,
-                              cacheWidth: 1200,
+                              cacheWidth: targetSize,
                               errorBuilder: (ctx, e, _) =>
                                   _buildNoArtPlaceholder(ctx),
                             )
@@ -1977,9 +1945,9 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                               key: ValueKey(widget.imageUrl),
                               imageUrl: widget.imageUrl,
                               fit: BoxFit.contain,
-                              memCacheWidth: 1200,
-                              maxWidthDiskCache: 1200,
-                              maxHeightDiskCache: 1200,
+                              memCacheWidth: targetSize,
+                              maxWidthDiskCache: targetSize,
+                              maxHeightDiskCache: targetSize,
                               useOldImageOnUrlChange: true,
                               fadeInDuration: Duration.zero,
                               fadeOutDuration: Duration.zero,
@@ -2300,11 +2268,13 @@ class _PlayerControlsState extends State<_PlayerControls> {
                           1.0,
                         )
                       : 0.0;
-                  return _ProgressBar(
-                    progress: progress,
-                    position: pos,
-                    duration: duration,
-                    formatDuration: widget.formatDuration,
+                  return RepaintBoundary(
+                    child: _ProgressBar(
+                      progress: progress,
+                      position: pos,
+                      duration: duration,
+                      formatDuration: widget.formatDuration,
+                    ),
                   );
                 },
               );
@@ -2351,6 +2321,18 @@ class _SongInfoState extends State<_SongInfo> {
   @override
   Widget build(BuildContext context) {
     if (widget.song == null) return const SizedBox.shrink();
+    final carMode = false;
+
+    final titleSize = carMode
+        ? ScreenHelper.titleFontSize(context) * 1.3
+        : ScreenHelper.titleFontSize(context);
+    final subtitleSize = carMode
+        ? ScreenHelper.subtitleFontSize(context) * 1.3
+        : ScreenHelper.subtitleFontSize(context);
+    final artistColor = carMode
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white.withValues(alpha: 0.7);
+    final actionBtnSize = carMode ? 36.0 : 26.0;
 
     return Row(
       children: [
@@ -2361,12 +2343,12 @@ class _SongInfoState extends State<_SongInfo> {
               ThemeAwareBuilder(
                 builder: (ctx, theme, isCustom) => Text(
                   widget.song!.title,
-                  style: isCustom
+                  style: isCustom && !carMode
                       ? theme.getTitleTextStyle()
                       : TextStyle(
                           color: Colors.white,
-                          fontSize: ScreenHelper.titleFontSize(context),
-                          fontWeight: FontWeight.bold,
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w900,
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -2378,11 +2360,11 @@ class _SongInfoState extends State<_SongInfo> {
                   artists: widget.song!.artistParticipants,
                   artistFallback: widget.song!.artist,
                   artistIdFallback: widget.song!.artistId,
-                  style: isCustom
+                  style: isCustom && !carMode
                       ? theme.getArtistTextStyle()
                       : TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: ScreenHelper.subtitleFontSize(context),
+                          color: artistColor,
+                          fontSize: subtitleSize,
                         ),
                   onBeforeNavigate: () {
                     if (Navigator.canPop(context)) Navigator.pop(context);
@@ -2400,10 +2382,10 @@ class _SongInfoState extends State<_SongInfo> {
         ),
         IconButton(
           onPressed: () => _showAddToPlaylistDialog(context),
-          icon: const Icon(
+          icon: Icon(
             CupertinoIcons.plus_circle,
             color: Colors.white,
-            size: 26,
+            size: actionBtnSize,
           ),
         ),
         IconButton(
@@ -2411,7 +2393,7 @@ class _SongInfoState extends State<_SongInfo> {
           icon: Icon(
             _isStarred ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
             color: _isStarred ? AppTheme.appleMusicRed : Colors.white,
-            size: 26,
+            size: actionBtnSize,
           ),
         ),
       ],
@@ -2558,8 +2540,7 @@ class _SongInfoState extends State<_SongInfo> {
               ),
               const SizedBox(height: 8),
               Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
+                child: ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
                   itemCount: playlists.length,
                   itemBuilder: (context, index) {
                     final playlist = playlists[index];
@@ -3045,6 +3026,8 @@ class _PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final carMode = false;
+
     return Selector<PlayerProvider, (bool, bool, bool, RepeatMode, bool)>(
       selector: (_, p) => (
         p.isPlaying,
@@ -3057,32 +3040,38 @@ class _PlaybackControls extends StatelessWidget {
         final (isPlaying, shuffleEnabled, hasNext, repeatMode, _) = data;
         final provider = context.read<PlayerProvider>();
 
+        final skipIconSize = carMode ? 44.0 : ScreenHelper.skipButtonIconSize(context);
+        final shuffleRepeatIconSize = carMode ? 32.0 : 22.0;
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
               onPressed: provider.toggleShuffle,
+              iconSize: shuffleRepeatIconSize,
               icon: Icon(
                 CupertinoIcons.shuffle,
                 color: shuffleEnabled
                     ? AppTheme.appleMusicRed
                     : Colors.white.withValues(alpha: 0.7),
-                size: 22,
               ),
             ),
             IconButton(
               onPressed: provider.skipPrevious,
-              icon: Icon(
+              iconSize: skipIconSize,
+              icon: const Icon(
                 CupertinoIcons.backward_fill,
                 color: Colors.white,
-                size: ScreenHelper.skipButtonIconSize(context),
               ),
             ),
             ThemeAwareBuilder(
               builder: (ctx, theme, isCustom) {
-                final size = isCustom
+                var size = isCustom
                     ? theme.controls.size
                     : ScreenHelper.playButtonContainerSize(context);
+                if (carMode) {
+                  size = size * 1.35;
+                }
                 final bgColor =
                     isCustom ? theme.controls.getColor() : Colors.white;
                 final iconColor = isCustom
@@ -3111,7 +3100,7 @@ class _PlaybackControls extends StatelessWidget {
                       color: iconColor,
                       size: isCustom
                           ? size * 0.5
-                          : ScreenHelper.playButtonIconSize(context),
+                          : (carMode ? size * 0.55 : ScreenHelper.playButtonIconSize(context)),
                     ),
                   ),
                 );
@@ -3119,16 +3108,17 @@ class _PlaybackControls extends StatelessWidget {
             ),
             IconButton(
               onPressed: hasNext ? provider.skipNext : null,
+              iconSize: skipIconSize,
               icon: Icon(
                 CupertinoIcons.forward_fill,
                 color: hasNext
                     ? Colors.white
                     : Colors.white.withValues(alpha: 0.3),
-                size: ScreenHelper.skipButtonIconSize(context),
               ),
             ),
             IconButton(
               onPressed: provider.toggleRepeat,
+              iconSize: shuffleRepeatIconSize,
               icon: Icon(
                 repeatMode == RepeatMode.one
                     ? CupertinoIcons.repeat_1
@@ -3136,7 +3126,6 @@ class _PlaybackControls extends StatelessWidget {
                 color: repeatMode != RepeatMode.off
                     ? AppTheme.appleMusicRed
                     : Colors.white.withValues(alpha: 0.7),
-                size: 22,
               ),
             ),
           ],
@@ -3237,8 +3226,13 @@ class _VolumeSliderState extends State<_VolumeSlider> {
     return Consumer<PlayerProvider>(
       builder: (context, provider, _) {
         final isRemote = provider.isRemotePlayback;
+        final carMode = false;
         final currentVolume = isRemote ? provider.volume : _systemVolume;
         final displayVolume = _isDragging ? _dragValue : currentVolume;
+
+        final trackHeight = carMode ? (_isDragging ? 8.0 : 5.0) : (_isDragging ? 5.0 : 3.0);
+        final thumbSize = carMode ? (_isDragging ? 32.0 : 20.0) : (_isDragging ? 28.0 : 12.0);
+        final thumbRadius = thumbSize / 2;
 
         return Row(
           children: [
@@ -3249,7 +3243,7 @@ class _VolumeSliderState extends State<_VolumeSlider> {
                     ? CupertinoIcons.speaker_slash_fill
                     : CupertinoIcons.speaker_1_fill,
                 color: Colors.white.withValues(alpha: 0.7),
-                size: 20,
+                size: carMode ? 28.0 : 20.0,
               ),
             ),
             const SizedBox(width: 12),
@@ -3292,7 +3286,7 @@ class _VolumeSliderState extends State<_VolumeSlider> {
                       );
                     },
                     child: SizedBox(
-                      height: 44,
+                      height: carMode ? 60.0 : 44.0,
                       child: Center(
                         child: Stack(
                           alignment: Alignment.centerLeft,
@@ -3301,12 +3295,10 @@ class _VolumeSliderState extends State<_VolumeSlider> {
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               curve: Curves.easeOut,
-                              height: _isDragging ? 5 : 3,
+                              height: trackHeight,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(
-                                  _isDragging ? 2.5 : 1.5,
-                                ),
+                                borderRadius: BorderRadius.circular(trackHeight / 2),
                               ),
                             ),
                             // Active track
@@ -3315,12 +3307,10 @@ class _VolumeSliderState extends State<_VolumeSlider> {
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeOut,
-                                height: _isDragging ? 5 : 3,
+                                height: trackHeight,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(
-                                    _isDragging ? 2.5 : 1.5,
-                                  ),
+                                  borderRadius: BorderRadius.circular(trackHeight / 2),
                                   boxShadow: _isDragging
                                       ? [
                                           BoxShadow(
@@ -3339,16 +3329,16 @@ class _VolumeSliderState extends State<_VolumeSlider> {
                             Positioned(
                               left: ((trackWidth *
                                           displayVolume.clamp(0.0, 1.0)) -
-                                      (_isDragging ? 14 : 6))
+                                      thumbRadius)
                                   .clamp(
                                 0.0,
-                                trackWidth - (_isDragging ? 28 : 12),
+                                trackWidth - thumbSize,
                               ),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeOut,
-                                width: _isDragging ? 28 : 12,
-                                height: _isDragging ? 28 : 12,
+                                width: thumbSize,
+                                height: thumbSize,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
@@ -3387,7 +3377,7 @@ class _VolumeSliderState extends State<_VolumeSlider> {
               child: Icon(
                 CupertinoIcons.speaker_3_fill,
                 color: Colors.white.withValues(alpha: 0.7),
-                size: 20,
+                size: carMode ? 28.0 : 20.0,
               ),
             ),
           ],
@@ -3450,8 +3440,7 @@ class _QueueSheet extends StatelessWidget {
                       final (queue, currentIndex) = data;
                       final provider = context.read<PlayerProvider>();
 
-                      return ReorderableListView.builder(
-                        scrollController: scrollController,
+                      return ReorderableListView.builder(scrollController: scrollController,
                         itemCount: queue.length,
                         buildDefaultDragHandles: false,
                         onReorder: provider.reorderQueue,

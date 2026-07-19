@@ -66,8 +66,7 @@ class FavoritePlaylistsSection extends StatelessWidget {
                 ),
                 SizedBox(
                   height: 180,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
+                  child: ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: favoritePlaylists.length,
                     itemBuilder: (context, index) {

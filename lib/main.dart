@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'package:window_manager/window_manager.dart';
-import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:safe_device/safe_device.dart';
 
 import 'l10n/app_localizations.dart';
@@ -144,16 +142,7 @@ void main() async {
     return;
   }
 
-  JustAudioMediaKit.ensureInitialized(linux: true, windows: false);
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    await windowManager.ensureInitialized();
-    const windowOptions = WindowOptions();
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
-  }
 
   ImageCacheConfig.configure();
 
@@ -173,7 +162,6 @@ void main() async {
   final castService = CastService();
   final localeService = LocaleService();
   final upnpService = UpnpService();
-  final jukeboxService = JukeboxService();
   final themeService = ThemeService();
   final nowPlayingThemeService = NowPlayingThemeService();
 
@@ -186,7 +174,6 @@ void main() async {
     _safeInit('Local music service', () => localMusicService.initialize()),
     _safeInit('Locale service', () => localeService.loadSavedLocale()),
     _safeInit('Theme service', () => themeService.initialize()),
-    _safeInit('Jukebox service', () => jukeboxService.initialize()),
     _safeInit('Now playing theme', () => nowPlayingThemeService.initialize()),
     _safeInit('Favorite playlists', () => FavoritePlaylistsService().initialize()),
     _safeInit('Analytics', () => AnalyticsService().initialize()),
@@ -197,6 +184,7 @@ void main() async {
   // Initialise the audio service BEFORE runApp so the background audio engine
   // is ready and fully decoupled from the Flutter widget lifecycle on iOS.
   final audioHandler = await initAudioService();
+
 
   // Create TranscodingService instance to share across providers
   final transcodingService = TranscodingService();
@@ -222,7 +210,6 @@ void main() async {
         value: nowPlayingThemeService,
       ),
       ChangeNotifierProvider<UpnpService>.value(value: upnpService),
-      ChangeNotifierProvider<JukeboxService>.value(value: jukeboxService),
       ChangeNotifierProvider(
         create: (_) => PlayerProvider(
           subsonicService,
@@ -230,7 +217,6 @@ void main() async {
           castService,
           upnpService,
           audioHandler,
-          jukeboxService,
           transcodingService,
         ),
       ),
@@ -284,6 +270,14 @@ class MuslyApp extends StatelessWidget {
           locale: localeService.currentLocale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(themeService.fontScale),
+              ),
+              child: child!,
+            );
+          },
           home: const AuthWrapper(),
           navigatorObservers: [AnalyticsNavigatorObserver()],
         );

@@ -191,18 +191,6 @@ class MuslyAudioHandler extends BaseAudioHandler with SeekHandler {
 /// directly — Android manages its own MediaBrowserServiceCompat (MusicService)
 /// for Android Auto and we must not start a second service on top of it.
 Future<MuslyAudioHandler> initAudioService() async {
-  if (!kIsWeb && Platform.isIOS) {
-    return AudioService.init(
-      builder: () => MuslyAudioHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.devid.musly.channel.audio',
-        androidNotificationChannelName: 'Musly',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
-        preloadArtwork: false,
-      ),
-    );
-  }
   // Android / desktop / web: no AudioService wrapper needed.
   return MuslyAudioHandler();
 }
