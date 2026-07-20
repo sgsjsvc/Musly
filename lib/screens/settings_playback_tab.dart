@@ -177,7 +177,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
         ),
       ),
       title: Text(
-        'Auto-play favorites on startup',
+        '自动在启动时播放喜欢的歌曲',
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w500,
