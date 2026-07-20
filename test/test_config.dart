@@ -10,6 +10,7 @@
 ///
 /// Or create `test_server_config.json`:
 ///   {"url": "http://192.168.1.100:4533", "username": "admin", "password": "admin"}
+library;
 
 import 'dart:convert';
 import 'dart:io';

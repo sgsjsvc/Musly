@@ -140,7 +140,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ],
                   ),
                 )
-              : ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, itemCount: _recentSongs.length,
+              : ListView.builder(itemCount: _recentSongs.length,
                   itemBuilder: (context, index) {
                     return SongTile(
                       song: _recentSongs[index],

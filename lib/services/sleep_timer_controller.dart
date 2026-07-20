@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/song.dart';
 
 /// Manages the sleep timer, including fade-out functionality.
 ///

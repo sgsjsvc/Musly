@@ -97,7 +97,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       );
     }
 
-    return ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, padding: const EdgeInsets.only(bottom: 150),
+    return ListView.builder(padding: const EdgeInsets.only(bottom: 150),
       itemCount: _favoriteSongs.length,
       itemBuilder: (context, index) {
         final song = _favoriteSongs[index];

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../models/models.dart';
 import 'subsonic_service.dart';
 import 'offline_service.dart';
 import '../providers/library_provider.dart';

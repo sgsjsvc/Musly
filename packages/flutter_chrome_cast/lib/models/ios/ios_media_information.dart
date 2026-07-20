@@ -1,10 +1,6 @@
 import 'package:flutter_chrome_cast/lib.dart';
 import 'package:flutter_chrome_cast/models/ios/ios_media_track.dart';
-import 'package:flutter_chrome_cast/models/ios/metadata/generic.dart';
 import 'package:flutter_chrome_cast/models/ios/metadata/metadata.dart';
-import 'package:flutter_chrome_cast/models/ios/metadata/movie.dart';
-import 'package:flutter_chrome_cast/models/ios/metadata/music.dart';
-import 'package:flutter_chrome_cast/models/ios/metadata/tv_show.dart';
 
 class GoogleCastMediaInformationIOS extends GoogleCastMediaInformation {
   GoogleCastMediaInformationIOS({

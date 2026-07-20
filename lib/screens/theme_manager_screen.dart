@@ -348,7 +348,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             children: [
               Text(
                 'This theme contains custom Flutter code which may pose security risks.',
-                style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -405,7 +405,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       '• $dep',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                     ),
                   ),
                 ),
@@ -418,7 +418,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           TextButton(
@@ -453,7 +453,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             width: 80,
             child: Text(
               '$label:',
-              style: TextStyle(color: Colors.white.withOpacity(0.6)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
             ),
           ),
           Expanded(
@@ -489,7 +489,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           TextButton(
@@ -571,9 +571,9 @@ class _DuplicateThemeDialogState extends State<_DuplicateThemeDialog> {
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'New theme name',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
           enabledBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
           ),
           focusedBorder: const UnderlineInputBorder(
             borderSide: BorderSide(color: AppTheme.appleMusicRed),
@@ -585,7 +585,7 @@ class _DuplicateThemeDialogState extends State<_DuplicateThemeDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(
             'Cancel',
-            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
           ),
         ),
         TextButton(

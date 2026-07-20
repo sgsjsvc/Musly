@@ -76,6 +76,7 @@ dependencies:
   window_manager: ^0.5.2
   just_audio_media_kit: ^2.1.0
 
+  get_it: any
 dependency_overrides:
   ffi: ^2.1.0
 

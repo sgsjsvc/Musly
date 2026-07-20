@@ -372,7 +372,7 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
                     ),
                     const Divider(height: 1),
                     Expanded(
-                      child: ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, controller: _scrollController,
+                      child: ListView.builder(controller: _scrollController,
                         padding: const EdgeInsets.only(bottom: 100),
                         itemCount: _sortedSongs.length,
                         itemBuilder: (context, index) {

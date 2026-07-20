@@ -255,7 +255,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                       style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, shrinkWrap: true,
+                    ListView.builder(shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _topSongs.take(5).length,
                       itemBuilder: (context, index) {

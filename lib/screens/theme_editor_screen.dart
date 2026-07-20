@@ -75,7 +75,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
               Text(
                 AppLocalizations.of(context)!.themeUnsavedChanges,
                 style: TextStyle(
-                  color: Colors.orange.withOpacity(0.8),
+                  color: Colors.orange.withValues(alpha: 0.8),
                   fontSize: 12,
                 ),
               ),
@@ -99,7 +99,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           padding: EdgeInsets.zero,
           indicatorColor: AppTheme.appleMusicRed,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.6),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
           tabs: const [
             Tab(text: 'Info'),
             Tab(text: 'Background'),
@@ -181,7 +181,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Color 1',
           color: _draft.background.getColor(0),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16).substring(2);
+            final hex = color.toARGB32().toRadixString(16).substring(2);
             final newColors = [..._draft.background.colors];
             if (newColors.isEmpty) {
               newColors.add('#$hex');
@@ -206,7 +206,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
             label: 'Color 2',
             color: _draft.background.getColor(1),
             onChanged: (color) {
-              final hex = color.value.toRadixString(16).substring(2);
+              final hex = color.toARGB32().toRadixString(16).substring(2);
               final newColors = [..._draft.background.colors];
               while (newColors.length < 2) {
                 newColors.add('#1a1a2e');
@@ -326,7 +326,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Color',
           color: config.getColor(),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16).substring(2);
+            final hex = color.toARGB32().toRadixString(16).substring(2);
             onUpdate(
               TextStyleConfig(
                 color: '#$hex',
@@ -488,7 +488,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Active Color',
           color: _draft.progressBar.getActiveColor(),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16).substring(2);
+            final hex = color.toARGB32().toRadixString(16).substring(2);
             _updateDraft(
               (d) => d.copyWith(
                 progressBar: ProgressBarConfig(
@@ -508,7 +508,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Inactive Color',
           color: _draft.progressBar.getInactiveColor(),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16);
+            final hex = color.toARGB32().toRadixString(16);
             _updateDraft(
               (d) => d.copyWith(
                 progressBar: ProgressBarConfig(
@@ -589,7 +589,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Button Color',
           color: _draft.controls.getColor(),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16).substring(2);
+            final hex = color.toARGB32().toRadixString(16).substring(2);
             _updateDraft(
               (d) => d.copyWith(
                 controls: ControlsConfig(
@@ -608,7 +608,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           label: 'Play Button Color',
           color: _draft.controls.getPlayButtonColor(),
           onChanged: (color) {
-            final hex = color.value.toRadixString(16).substring(2);
+            final hex = color.toARGB32().toRadixString(16).substring(2);
             _updateDraft(
               (d) => d.copyWith(
                 controls: ControlsConfig(
@@ -743,7 +743,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -782,7 +782,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
             ),
@@ -801,7 +801,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           min: min,
           max: max,
           activeColor: AppTheme.appleMusicRed,
-          inactiveColor: Colors.white.withOpacity(0.3),
+          inactiveColor: Colors.white.withValues(alpha: 0.3),
           onChanged: onChanged,
         ),
       ],
@@ -828,7 +828,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           ),
           CupertinoSwitch(
             value: value,
-            activeColor: AppTheme.appleMusicRed,
+            activeTrackColor: AppTheme.appleMusicRed,
             onChanged: onChanged,
           ),
         ],
@@ -848,7 +848,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -889,7 +889,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -931,7 +931,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
             ),
           ),
         ),
@@ -962,7 +962,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               AppLocalizations.of(context)!.discard,
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           TextButton(

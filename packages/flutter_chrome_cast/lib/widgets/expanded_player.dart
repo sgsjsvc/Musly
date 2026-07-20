@@ -68,10 +68,10 @@ class _ExpandedGoogleCastPlayerControllerState
                           end: Alignment.bottomCenter,
                           colors: [
                         Colors.black,
-                        Colors.black.withOpacity(0.1),
+                        Colors.black.withValues(alpha: 0.1),
                         ...List.generate(6, (index) => Colors.transparent),
-                        Colors.black.withOpacity(0.5),
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: 0.5),
+                        Colors.black.withValues(alpha: 0.8),
                         Colors.black,
                       ])),
                 ),

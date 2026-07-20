@@ -6,7 +6,6 @@ import 'package:musly/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:musly/services/upnp_service.dart';
 import 'package:musly/services/audio_handler.dart';
-import 'package:musly/services/jukebox_service.dart';
 import 'package:musly/services/transcoding_service.dart';
 import '../test_helpers.dart';
 import '../bootstrap.dart';

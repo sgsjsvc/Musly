@@ -30,7 +30,7 @@ class ImportResult {
 class NowPlayingThemeService extends ChangeNotifier {
   static const String _keyActiveThemeId = 'active_now_playing_theme_id';
 
-  List<NowPlayingTheme> _themes = [];
+  final List<NowPlayingTheme> _themes = [];
   String? _activeThemeId;
   String? _themesDir;
 
