@@ -58,6 +58,7 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PlayerProvider>(context, listen: false).playRandomFavoritesOnStartup();
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final libraryProvider = Provider.of<LibraryProvider>(
         context,

@@ -62,6 +62,24 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<Song> _queue = [];
   int _currentIndex = -1;
   bool _isPlaying = false;
+  Future<void> playRandomFavoritesOnStartup() async {
+    try {
+      final isEnabled = await _storageService.getAutoPlayFavoritesOnStartup();
+      if (!isEnabled) return;
+      
+      final favorites = await _subsonicService.getStarred();
+      if (favorites.songs != null && favorites.songs!.isNotEmpty) {
+        final songs = favorites.songs!;
+        songs.shuffle(Random());
+        await replaceQueue(songs, initialIndex: 0);
+        await play();
+      }
+    } catch (e) {
+      debugPrint('Error auto playing favorites: $e');
+    }
+  }
+
+  bool _disposed = false;
   bool _isLoading = false;
   bool _shuffleEnabled = false;
   bool _gaplessEnabled = true;
