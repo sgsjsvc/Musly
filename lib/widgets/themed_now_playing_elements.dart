@@ -70,7 +70,7 @@ extension ThemedColors on NowPlayingTheme {
     if (!artwork.shadow) return null;
     return [
       BoxShadow(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         blurRadius: 20,
         offset: const Offset(0, 10),
         spreadRadius: 5,
@@ -87,7 +87,7 @@ extension ThemedColors on NowPlayingTheme {
 
   Gradient? getBackgroundGradient() {
     if (background.type == 'solid') {
-      final color = background.getColor(0).withOpacity(background.opacity);
+      final color = background.getColor(0).withValues(alpha: background.opacity);
       return LinearGradient(
         colors: [color, color],
       );
@@ -96,8 +96,8 @@ extension ThemedColors on NowPlayingTheme {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          background.getColor(0).withOpacity(background.opacity),
-          background.getColor(1).withOpacity(background.opacity),
+          background.getColor(0).withValues(alpha: background.opacity),
+          background.getColor(1).withValues(alpha: background.opacity),
         ],
       );
     }

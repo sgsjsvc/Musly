@@ -525,7 +525,7 @@ class _QuickAccessTileState extends State<_QuickAccessTile> {
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -759,8 +759,7 @@ class _DesktopSongRow extends StatefulWidget {
     required this.song,
     required this.playlist,
     required this.index,
-    this.hPad = 16,
-  });
+  }) : hPad = 16;
 
   @override
   State<_DesktopSongRow> createState() => _DesktopSongRowState();

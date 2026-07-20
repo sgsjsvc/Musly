@@ -30,6 +30,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
   int _autoDjSongsToAdd = 5;
   bool _fadeEnabled = false;
   int _fadeDurationMs = 300;
+  bool _autoPlayFavoritesOnStartup = false;
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -46,6 +47,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
 
     final storageService = StorageService();
     final lrcLibFallback = await storageService.getLrcLibFallback();
+    final autoPlayFavs = await storageService.getAutoPlayFavoritesOnStartup();
     setState(() {
       _replayGainMode = _replayGainService.getMode();
       _replayGainPreamp = _replayGainService.getPreampGain();
@@ -56,6 +58,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
       _autoDjSongsToAdd = playerProvider.autoDjService.songsToAdd;
       _fadeEnabled = _fadeSettingsService.getFadeEnabled();
       _fadeDurationMs = _fadeSettingsService.getFadeDurationMs();
+      _autoPlayFavoritesOnStartup = autoPlayFavs;
     });
   }
 
@@ -72,6 +75,13 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
               _buildDivider(),
               _buildAutoDjSongsSlider(),
             ],
+          ],
+        ),
+        const SizedBox(height: 24),
+        _buildSection(
+          title: 'Startup',
+          children: [
+            _buildAutoPlayFavoritesToggle(),
           ],
         ),
         const SizedBox(height: 24),
@@ -144,6 +154,46 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
       child: Container(
         height: 0.5,
         color: _isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+      ),
+    );
+  }
+
+  Widget _buildAutoPlayFavoritesToggle() {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE91E63), Color(0xFFF06292)],
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.favorite_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
+      ),
+      title: Text(
+        '自动在启动时播放喜欢的歌曲',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: _isDark ? Colors.white : Colors.black87,
+        ),
+      ),
+      trailing: Switch.adaptive(
+        value: _autoPlayFavoritesOnStartup,
+        activeColor: const Color(0xFFE91E63),
+        onChanged: (value) async {
+          setState(() {
+            _autoPlayFavoritesOnStartup = value;
+          });
+          final storageService = StorageService();
+          await storageService.setAutoPlayFavoritesOnStartup(value);
+        },
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 
@@ -84,9 +83,6 @@ class CastService extends ChangeNotifier {
     try {
       const appId = 'CC1AD845';
       GoogleCastOptions? options;
-      if (options != null) {
-        await GoogleCastContext.instance.setSharedInstanceWithOptions(options);
-      }
       debugPrint('CastService: Context initialized successfully');
 
       if (_sessionManager.hasConnectedSession) {

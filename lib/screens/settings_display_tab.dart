@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/recommendation_service.dart';
 import '../services/player_ui_settings_service.dart';
@@ -194,7 +192,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
                     activeTrackColor: Theme.of(context).colorScheme.primary,
-                    inactiveTrackColor: (_isDark ? Colors.white : Colors.black).withOpacity(0.1),
+                    inactiveTrackColor: (_isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
                     thumbColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: Slider(

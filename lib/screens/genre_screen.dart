@@ -180,7 +180,7 @@ class _GenreScreenState extends State<GenreScreen>
         ),
       );
     }
-    return ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, itemCount: _songs!.length + 1,
+    return ListView.builder(itemCount: _songs!.length + 1,
       itemBuilder: (context, index) {
         if (index == _songs!.length) return const SizedBox(height: 100);
         return SongTile(

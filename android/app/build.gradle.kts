@@ -36,15 +36,14 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        ndk {
-            // Support all CPU architectures
-            abiFilters += listOf(
-                "arm64-v8a",   // 64-bit ARM (most modern Android phones/tablets)
-                "armeabi-v7a", // 32-bit ARM (older Android devices)
-                "x86_64",      // 64-bit x86 (emulators, ChromeOS, some tablets)
-                "x86"          // 32-bit x86 (older emulators)
-            )
-        }
+        // ndk {
+        //     abiFilters += listOf(
+        //         "arm64-v8a",
+        //         "armeabi-v7a",
+        //         "x86_64",
+        //         "x86"
+        //     )
+        // }
     }
 
     // Configure signing with custom keystore or debug fallback
@@ -61,6 +60,12 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {

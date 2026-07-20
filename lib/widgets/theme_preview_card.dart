@@ -96,7 +96,7 @@ class ThemePreviewCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: theme.safeMode
                               ? Colors.orange
-                              : Colors.purple.withOpacity(0.9),
+                              : Colors.purple.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -148,7 +148,7 @@ class ThemePreviewCard extends StatelessWidget {
                     builder: (ctx) => Text(
                     AppLocalizations.of(ctx)!.themeAuthor(theme.author),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 11,
                     ),
                     maxLines: 1,
@@ -177,7 +177,7 @@ class ThemePreviewCard extends StatelessWidget {
             if (onEdit != null || onDuplicate != null || onDelete != null)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(12),
                   ),
@@ -230,13 +230,13 @@ class ThemePreviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 9,
           fontWeight: FontWeight.w600,
         ),
@@ -253,7 +253,7 @@ class ThemePreviewCard extends StatelessWidget {
       icon: Icon(
         icon,
         size: 18,
-        color: color ?? Colors.white.withOpacity(0.7),
+        color: color ?? Colors.white.withValues(alpha: 0.7),
       ),
       onPressed: onPressed,
       padding: const EdgeInsets.all(6),
@@ -302,7 +302,7 @@ class ThemePreviewCard extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: theme.controls.getColor().withOpacity(0.2),
+            color: theme.controls.getColor().withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(
               theme.artwork.shape == 'circle'
                   ? 20
@@ -315,7 +315,7 @@ class ThemePreviewCard extends StatelessWidget {
             boxShadow: theme.artwork.shadow
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -324,7 +324,7 @@ class ThemePreviewCard extends StatelessWidget {
           ),
           child: Icon(
             CupertinoIcons.music_note,
-            color: theme.controls.getColor().withOpacity(0.5),
+            color: theme.controls.getColor().withValues(alpha: 0.5),
             size: 16,
           ),
         ),

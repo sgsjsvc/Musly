@@ -247,7 +247,7 @@ extension _ThrottleStream<T> on Stream<T> {
             controller.add(data);
             timer = Timer(duration, () {
               if (hasLatest) {
-                controller.add(latestValue!);
+                controller.add(latestValue as T);
                 hasLatest = false;
               }
             });

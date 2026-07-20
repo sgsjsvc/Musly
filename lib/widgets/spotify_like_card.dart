@@ -60,7 +60,7 @@ class _SpotifyLikeCardState extends State<SpotifyLikeCard> {
                     boxShadow: _isHovered
                         ? [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -173,7 +173,7 @@ class _PlayButtonState extends State<_PlayButton>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

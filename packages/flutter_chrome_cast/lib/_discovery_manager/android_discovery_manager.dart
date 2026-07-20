@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chrome_cast/_discovery_manager/discovery_manager_platform_interface.dart';
 import 'package:flutter_chrome_cast/entities/cast_device.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show Random;
 
@@ -9,7 +8,6 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
@@ -62,6 +60,23 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<Song> _queue = [];
   int _currentIndex = -1;
   bool _isPlaying = false;
+  Future<void> playRandomFavoritesOnStartup() async {
+    try {
+      final isEnabled = await _storageService.getAutoPlayFavoritesOnStartup();
+      if (!isEnabled) return;
+      
+      final favorites = await _subsonicService.getStarred();
+      if (favorites.songs.isNotEmpty) {
+        final songs = favorites.songs;
+        songs.shuffle(Random());
+        await playSong(songs[0], playlist: songs, startIndex: 0);
+      }
+    } catch (e) {
+      debugPrint('Error auto playing favorites: $e');
+    }
+  }
+
+  final bool _disposed = false;
   bool _isLoading = false;
   bool _shuffleEnabled = false;
   bool _gaplessEnabled = true;

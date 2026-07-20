@@ -73,7 +73,10 @@ dependencies:
   wakelock_plus: ^1.4.0
   dart_eval: ^0.8.4
   flutter_colorpicker: ^1.1.0
+  window_manager: ^0.5.2
+  just_audio_media_kit: ^2.1.0
 
+  get_it: any
 dependency_overrides:
   ffi: ^2.1.0
 

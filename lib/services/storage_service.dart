@@ -194,6 +194,16 @@ class StorageService {
     return prefs.getBool('floating_window_enabled') ?? false;
   }
 
+  Future<bool> getAutoPlayFavoritesOnStartup() async {
+    final prefs = await _prefs;
+    return prefs.getBool('autoPlayFavorites') ?? false;
+  }
+
+  Future<void> setAutoPlayFavoritesOnStartup(bool value) async {
+    final prefs = await _prefs;
+    await prefs.setBool('autoPlayFavorites', value);
+  }
+
   Future<void> saveBootAutoStart(bool enabled) async {
     final prefs = await _prefs;
     await prefs.setBool('boot_auto_start', enabled);

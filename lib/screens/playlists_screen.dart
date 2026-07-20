@@ -57,7 +57,7 @@ class PlaylistsScreen extends StatelessWidget {
                 ],
               ),
             )
-          : ListView.builder(addAutomaticKeepAlives: false, addRepaintBoundaries: false, padding: const EdgeInsets.only(bottom: 150),
+          : ListView.builder(padding: const EdgeInsets.only(bottom: 150),
               itemCount: libraryProvider.playlists.length,
               itemBuilder: (context, index) {
                 final playlist = libraryProvider.playlists[index];
