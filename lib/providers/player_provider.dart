@@ -71,8 +71,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (favorites.songs != null && favorites.songs!.isNotEmpty) {
         final songs = favorites.songs!;
         songs.shuffle(Random());
-        await replaceQueue(songs, initialIndex: 0);
-        await play();
+        await playSong(songs[0], playlist: songs, startIndex: 0);
       }
     } catch (e) {
       debugPrint('Error auto playing favorites: $e');
