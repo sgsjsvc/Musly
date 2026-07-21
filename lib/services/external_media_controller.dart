@@ -269,6 +269,7 @@ class ExternalMediaController {
         title: song.title,
         artist: song.artist ?? 'Unknown Artist',
         isPlaying: snapshot.isPlaying,
+        artworkUrl: snapshot.artworkUrl,
       );
     }
   }
@@ -412,3 +413,4 @@ class ExternalMediaController {
     try { _samsungService.dispose(); } catch (_) {}
   }
 }
+

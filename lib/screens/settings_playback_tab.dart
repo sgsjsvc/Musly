@@ -67,16 +67,6 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        _buildSection(
-          title: AppLocalizations.of(context)!.sectionAutoDj,
-          children: [
-            _buildAutoDjModeSelector(),
-            if (_autoDjMode != AutoDjMode.off) ...[
-              _buildDivider(),
-              _buildAutoDjSongsSlider(),
-            ],
-          ],
-        ),
         const SizedBox(height: 24),
         _buildSection(
           title: 'Startup',

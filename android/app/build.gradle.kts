@@ -83,6 +83,7 @@ dependencies {
     implementation("io.coil-kt:coil:2.6.0")
     implementation("androidx.palette:palette:1.0.0")
     implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
 }
 
 flutter {

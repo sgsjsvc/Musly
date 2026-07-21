@@ -1191,6 +1191,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         artist: song.artist ?? 'Unknown Artist',
         artworkUrl: _resolvedArtworkUrl ?? song.coverArt,
       );
+      _loadLyricsForCurrentSong(song);
 
       if (_castService.isConnected) {
         if (_audioPlayer.playing) await _audioPlayer.stop();
@@ -2106,6 +2107,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         artist: _currentSong!.artist ?? 'Unknown Artist',
         artworkUrl: _resolvedArtworkUrl ?? _currentSong!.coverArt,
       );
+      _loadLyricsForCurrentSong(_currentSong!);
       await _applyReplayGain(_currentSong);
     }
 
@@ -2250,11 +2252,67 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _currentIndexSub?.cancel();
     _positionController.close();
     WidgetsBinding.instance.removeObserver(this);
+    _recommendationService?.dispose();
     super.dispose();
   }
 
-
-
+  Future<void> _loadLyricsForCurrentSong(Song song) async {
+    try {
+      final cached = await _offlineService.getLocalLyrics(song.id);
+      final syncedData = cached?['lyricsList'] as Map<String, dynamic>? ??
+          await _subsonicService.getLyricsBySongId(song.id);
+          
+      String? lrcContent;
+      
+      if (syncedData != null) {
+        final structuredLyrics = syncedData['structuredLyrics'];
+        if (structuredLyrics is List && structuredLyrics.isNotEmpty) {
+          final syncedEntry = structuredLyrics.cast<Map<String, dynamic>>().firstWhere(
+                (l) => l['synced'] == true,
+                orElse: () => <String, dynamic>{},
+              );
+          final lines = syncedEntry['line'] as List?;
+          if (lines != null && lines.isNotEmpty) {
+            final sb = StringBuffer();
+            for (final line in lines) {
+              final startMs = line['start'] as int? ?? 0;
+              final duration = Duration(milliseconds: startMs);
+              final minutes = duration.inMinutes.toString().padLeft(2, '0');
+              final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+              final ms = (duration.inMilliseconds % 1000 ~/ 10).toString().padLeft(2, '0');
+              final text = line['value']?.toString() ?? '';
+              if (text.isNotEmpty) {
+                sb.writeln('[$minutes:$seconds.$ms]$text');
+              }
+            }
+            lrcContent = sb.toString();
+          }
+        }
+      }
+      
+      if (lrcContent == null) {
+        final plainData = cached?['lyrics'] as Map<String, dynamic>? ??
+            await _subsonicService.getLyrics(
+              artist: song.artist,
+              title: song.title,
+              id: song.id,
+            );
+        final value = plainData?['value']?.toString();
+        if (value != null && value.contains('[') && value.contains(':')) {
+          lrcContent = value;
+        }
+      }
+      
+      if (lrcContent != null && _currentSong?.id == song.id) {
+        await _lyricsService.loadLyrics(lrcContent);
+        _lyricsService.startSync(positionStream);
+      } else if (_currentSong?.id == song.id) {
+        await _lyricsService.loadLyrics(null);
+      }
+    } catch (e) {
+      debugPrint('Failed to load lyrics for background: $e');
+    }
+  }
 
   void _onCastStateChanged() {
     notifyListeners();

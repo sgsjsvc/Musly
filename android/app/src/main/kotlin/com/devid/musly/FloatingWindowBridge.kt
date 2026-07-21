@@ -1,6 +1,7 @@
 package com.devid.musly
 
 object FloatingWindowBridge {
+    var service: FloatingWindowService? = null
     var onControlAction: ((String) -> Unit)? = null
 
     var currentSongTitle: String = "未在播放"
@@ -14,6 +15,7 @@ object FloatingWindowBridge {
         set(value) {
             field = value
             onLyricsChanged?.invoke(value)
+            service?.updateLyrics(value)
         }
     var onLyricsChanged: ((String) -> Unit)? = null
 
