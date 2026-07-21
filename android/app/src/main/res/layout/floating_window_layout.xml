@@ -1,74 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_container"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:background="@drawable/floating_window_background"
-    android:padding="8dp"
-    android:gravity="center_vertical"
-    android:elevation="8dp">
+    android:padding="8dp">
 
-    <!-- Album Artwork -->
-    <ImageView
-        android:id="@+id/floating_artwork"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
-        android:src="@mipmap/ic_launcher"
-        android:background="@drawable/floating_artwork_background" />
-
-    <!-- Song Info -->
-    <LinearLayout
-        android:layout_width="0dp"
+    <!-- Main Floating Window Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/floating_card"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="8dp">
+        app:cardCornerRadius="24dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#D6222226"
+        android:layout_gravity="center">
 
-        <TextView
-            android:id="@+id/floating_title"
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="未在播放"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:maxWidth="150dp" />
+            android:padding="8dp">
 
-        <TextView
-            android:id="@+id/floating_artist"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Musly"
-            android:textColor="#B0B0B0"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:maxWidth="150dp"
-            android:layout_marginTop="2dp" />
-    </LinearLayout>
+            <!-- Album Artwork -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/artwork_container"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="4dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#44000000">
 
-    <!-- Play/Pause Button -->
-    <ImageView
-        android:id="@+id/floating_play_pause"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_media_play"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="播放/暂停" />
+                <ImageView
+                    android:id="@+id/floating_artwork"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@android:drawable/ic_media_play" />
+            </androidx.cardview.widget.CardView>
 
-    <!-- Next Button -->
-    <ImageView
-        android:id="@+id/floating_next"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_media_next"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="下一首" />
+            <!-- Song Info (Title & Artist) -->
+            <LinearLayout
+                android:id="@+id/song_info_container"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/artwork_container"
+                android:layout_centerVertical="true"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp">
 
-</LinearLayout>
+                <TextView
+                    android:id="@+id/floating_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Not Playing"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever" />
+
+                <TextSwitcher
+                    android:id="@+id/floating_artist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <!-- Controls -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/song_info_container"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/floating_prev"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="6dp"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Previous" />
+
+                <ImageView
+                    android:id="@+id/floating_play_pause"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:padding="8dp"
+                    android:src="@android:drawable/ic_media_play"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Play/Pause" />
+
+                <ImageView
+                    android:id="@+id/floating_next"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="6dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Next" />
+                
+                <ImageView
+                    android:id="@+id/floating_close"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="6dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Close"
+                    android:alpha="0.7" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Progress Bar at bottom of card -->
+        <ProgressBar
+            android:id="@+id/floating_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:progressDrawable="@drawable/floating_progress_drawable"
+            android:max="1000"
+            android:progress="0" />
+
+    </androidx.cardview.widget.CardView>
+</FrameLayout>

@@ -62,11 +62,17 @@ class FloatingWindowController {
     required String title,
     required String artist,
     required bool isPlaying,
+    String? artworkUrl,
+    int? position,
+    int? duration,
   }) async {
     await _safeInvoke('show', {
       'title': title,
       'artist': artist,
       'isPlaying': isPlaying,
+      'artworkUrl': artworkUrl ?? '',
+      'position': position ?? 0,
+      'duration': duration ?? 0,
     });
   }
 
@@ -78,11 +84,17 @@ class FloatingWindowController {
     required String title,
     required String artist,
     required bool isPlaying,
+    String? artworkUrl,
+    int? position,
+    int? duration,
   }) async {
     await _safeInvoke('update', {
       'title': title,
       'artist': artist,
       'isPlaying': isPlaying,
+      'artworkUrl': artworkUrl ?? '',
+      'position': position ?? 0,
+      'duration': duration ?? 0,
     });
   }
 
@@ -94,6 +106,10 @@ class FloatingWindowController {
   /// 向原生端发送当前句歌词进行滚动显示
   static Future<void> updateLyrics(String lyrics) async {
     await _safeInvoke('updateLyrics', {'lyrics': lyrics});
+  }
+
+  static Future<void> updateProgress(int position, int duration) async {
+    await _safeInvoke('updateProgress', {'position': position, 'duration': duration});
   }
 
   static void dispose() {

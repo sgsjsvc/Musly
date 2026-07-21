@@ -1,5 +1,7 @@
 package com.devid.musly
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,20 +11,27 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.text.TextUtils
 import android.util.Log
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
-import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextSwitcher
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.palette.graphics.Palette
+import coil.load
+import coil.transform.CircleCropTransformation
+import android.graphics.drawable.BitmapDrawable
 
 class FloatingWindowService : Service() {
 
@@ -30,25 +39,30 @@ class FloatingWindowService : Service() {
         private const val TAG = "FloatingWindowService"
         private const val CHANNEL_ID = "musly_floating_window"
         private const val NOTIFICATION_ID = 7777
-
-        // 用于给 MainActivity 检查悬浮窗是否已经在运行
         var isRunning = false
             private set
     }
 
     private lateinit var windowManager: WindowManager
-    private var floatingView: LinearLayout? = null
+    private var floatingView: View? = null
     private var params: WindowManager.LayoutParams? = null
     private val handler = Handler(Looper.getMainLooper())
 
     private var tvTitle: TextView? = null
-    private var tvArtist: android.widget.TextSwitcher? = null
+    private var tvArtist: TextSwitcher? = null
     private var btnPlayPause: ImageView? = null
-
+    private var btnPrev: ImageView? = null
+    private var btnNext: ImageView? = null
+    private var btnClose: ImageView? = null
+    private var ivArtwork: ImageView? = null
+    private var progressBar: ProgressBar? = null
+    private var cardRoot: CardView? = null
+    private var songInfoContainer: View? = null
+    
     private var isPlaying = false
-    private var isHiding = false
     private var currentArtist = ""
     private var currentLyrics = ""
+    private var screenWidth = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -56,32 +70,35 @@ class FloatingWindowService : Service() {
         super.onCreate()
         isRunning = true
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        screenWidth = resources.displayMetrics.widthPixels
 
-        // 监听歌名变化并动态更新
         FloatingWindowBridge.onSongTitleChanged = { title ->
             tvTitle?.post {
                 tvTitle?.text = title
                 tvTitle?.isSelected = true
             }
         }
-
-        // 监听歌词变化并动态更新
         FloatingWindowBridge.onLyricsChanged = { lyrics ->
             currentLyrics = lyrics
             handler.post {
                 tvArtist?.setText(if (lyrics.isBlank()) currentArtist else lyrics)
             }
         }
+        FloatingWindowBridge.onProgressChanged = { pos, dur ->
+            handler.post {
+                if (dur > 0) {
+                    progressBar?.max = dur.toInt()
+                    progressBar?.progress = pos.toInt()
+                }
+            }
+        }
+        FloatingWindowBridge.onArtworkChanged = { url ->
+            handler.post { loadArtwork(url) }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // 如果正在隐藏状态，忽略重启请求（防止竞态）
-        if (isHiding) return START_NOT_STICKY
-
-        // Start as foreground service first (prevents kill on Android 8+)
         startForegroundWithNotification()
-
-        // Parse extras
         val title = intent?.getStringExtra("title") ?: ""
         val artist = intent?.getStringExtra("artist") ?: ""
         isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
@@ -90,13 +107,19 @@ class FloatingWindowService : Service() {
             showFloatingWindow()
         }
         updateSongInfo(title, artist, isPlaying)
-
+        loadArtwork(FloatingWindowBridge.currentArtworkUrl)
+        FloatingWindowBridge.onProgressChanged?.invoke(
+            FloatingWindowBridge.currentPosition, 
+            FloatingWindowBridge.currentDuration
+        )
         return START_NOT_STICKY
     }
 
     private fun startForegroundWithNotification() {
-        createNotificationChannel()
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(CHANNEL_ID, "悬浮窗服务", NotificationManager.IMPORTANCE_LOW)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -104,314 +127,256 @@ class FloatingWindowService : Service() {
             this, 0, launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
         val notification = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle("Musly")
-            .setContentText("悬浮窗控制中")
+            .setContentText("悬浮窗运行中")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()
-
         startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "悬浮窗服务",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "悬浮窗控制通知"
-                setShowBadge(false)
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
-    }
-
     private fun showFloatingWindow() {
-        if (floatingView != null) {
-            Log.d(TAG, "Floating window already showing")
-            return
-        }
+        val layoutInflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        floatingView = layoutInflater.inflate(R.layout.floating_window_layout, null)
+        
+        cardRoot = floatingView?.findViewById(R.id.floating_card)
+        tvTitle = floatingView?.findViewById(R.id.floating_title)
+        tvTitle?.isSelected = true
+        tvArtist = floatingView?.findViewById(R.id.floating_artist)
+        btnPlayPause = floatingView?.findViewById(R.id.floating_play_pause)
+        btnPrev = floatingView?.findViewById(R.id.floating_prev)
+        btnNext = floatingView?.findViewById(R.id.floating_next)
+        btnClose = floatingView?.findViewById(R.id.floating_close)
+        ivArtwork = floatingView?.findViewById(R.id.floating_artwork)
+        progressBar = floatingView?.findViewById(R.id.floating_progress)
+        songInfoContainer = floatingView?.findViewById(R.id.song_info_container)
 
-        val density = resources.displayMetrics.density
-
-        // ── Root layout ──────────────────────────────────────────────
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            val backgroundDrawable = android.graphics.drawable.GradientDrawable().apply {
-                orientation = android.graphics.drawable.GradientDrawable.Orientation.TL_BR
-                colors = intArrayOf(
-                    Color.parseColor("#D6222226"), // frosted glass top-left
-                    Color.parseColor("#B0161618")  // frosted glass bottom-right
-                )
-                cornerRadius = 18 * density
-                setStroke((1 * density).toInt(), Color.parseColor("#3BFFFFFF")) // light refracting border
-            }
-            background = backgroundDrawable
-            setPadding((14 * density).toInt(), (10 * density).toInt(),
-                       (14 * density).toInt(), (10 * density).toInt())
-            gravity = Gravity.CENTER_VERTICAL
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                elevation = 12f * density
-                outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+        // TextSwitcher config
+        tvArtist?.setFactory {
+            TextView(this).apply {
+                setTextColor(Color.parseColor("#99FFFFFF"))
+                textSize = 12f
+                maxLines = 1
+                isSingleLine = true
+                ellipsize = android.text.TextUtils.TruncateAt.END
             }
         }
+        tvArtist?.inAnimation = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_in).apply { duration = 300 }
+        tvArtist?.outAnimation = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out).apply { duration = 300 }
 
-        // ── Play / Pause button ──────────────────────────────────────
-        val iconSize = (28 * density).toInt()
-        val iconPadding = (6 * density).toInt()
-        btnPlayPause = ImageView(this).apply {
-            setImageResource(
-                if (isPlaying) R.drawable.ic_floating_pause
-                else R.drawable.ic_floating_play
-            )
-            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
-            setOnClickListener {
-                Log.d(TAG, "Play/Pause clicked")
-                triggerControlAction("play_pause")
-            }
-            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
-        }
-        root.addView(btnPlayPause)
-
-        // ── Song info (跑马灯歌名 + 艺术家) ──────────────────────────
-        val infoLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
+        btnPlayPause?.setOnClickListener { triggerControlAction("play_pause") }
+        btnPrev?.setOnClickListener { triggerControlAction("previous") }
+        btnNext?.setOnClickListener { triggerControlAction("next") }
+        btnClose?.setOnClickListener { 
+            triggerControlAction("close")
+            hide() 
         }
 
-        // 歌名 — 跑马灯滚动
-        tvTitle = MarqueeTextView(this).apply {
-            text = FloatingWindowBridge.currentSongTitle
-            setTextColor(Color.WHITE)
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
+        setupTouchListener()
 
-            // 跑马灯滚动核心配置
-            ellipsize = TextUtils.TruncateAt.MARQUEE
-            isSingleLine = true
-            marqueeRepeatLimit = -1
-            isSelected = true
-            isFocusable = true
-            isFocusableInTouchMode = true
-            setHorizontallyScrolling(true)
-            isEnabled = true
-
-            // 限制宽度以触发滚动（130dp）
-            val widthInPx = (130 * density).toInt()
-            layoutParams = LinearLayout.LayoutParams(
-                widthInPx,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        }
-        infoLayout.addView(tvTitle)
-
-        // 艺术家 / 歌词显示 (使用 TextSwitcher 实现 smooth crossfade)
-        tvArtist = android.widget.TextSwitcher(this).apply {
-            setFactory {
-                TextView(this@FloatingWindowService).apply {
-                    setTextColor(Color.parseColor("#99FFFFFF"))
-                    textSize = 11f
-                    maxLines = 1
-                    isSingleLine = true
-                    ellipsize = TextUtils.TruncateAt.END
-                }
-            }
-            inAnimation = android.view.animation.AnimationUtils.loadAnimation(
-                this@FloatingWindowService,
-                android.R.anim.fade_in
-            ).apply {
-                duration = 300
-            }
-            outAnimation = android.view.animation.AnimationUtils.loadAnimation(
-                this@FloatingWindowService,
-                android.R.anim.fade_out
-            ).apply {
-                duration = 300
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setText(if (currentLyrics.isBlank()) currentArtist else currentLyrics)
-        }
-        infoLayout.addView(tvArtist)
-
-        root.addView(infoLayout)
-
-        // ── Next button ──────────────────────────────────────────────
-        val btnNext = ImageView(this).apply {
-            setImageResource(R.drawable.ic_floating_next)
-            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
-            setOnClickListener {
-                Log.d(TAG, "Next clicked")
-                triggerControlAction("next")
-            }
-            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
-        }
-        root.addView(btnNext)
-
-        // ── WindowManager layout type ────────────────────────────────
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
             @Suppress("DEPRECATION")
             WindowManager.LayoutParams.TYPE_PHONE
         }
-
-        // ── Layout params ────────────────────────────────────────────
         params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            x = 0
-            y = 100
+            gravity = Gravity.TOP or Gravity.START
+            x = 50
+            y = 200
         }
 
-        // ── Drag handling ────────────────────────────────────────────
-        val dragTouchListener = object : View.OnTouchListener {
-            private var initialX = 0
-            private var initialY = 0
-            private var initialTouchX = 0f
-            private var initialTouchY = 0f
+        try {
+            windowManager.addView(floatingView, params)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to add view: $e")
+        }
+    }
 
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                if (event == null) return false
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = params?.x ?: 0
-                        initialY = params?.y ?: 0
-                        initialTouchX = event.rawX
-                        initialTouchY = event.rawY
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        params?.x = initialX + (event.rawX - initialTouchX).toInt()
-                        params?.y = initialY + (event.rawY - initialTouchY).toInt()
-                        try {
-                            windowManager.updateViewLayout(floatingView, params)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error updating layout during drag: $e")
-                        }
-                        return true
-                    }
+    private fun setupTouchListener() {
+        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                // Wake up app
+                val intent = Intent(this@FloatingWindowService, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
                 }
-                return false
+                startActivity(intent)
+                return true
+            }
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                triggerControlAction("like")
+                bounceAnimation()
+                return true
+            }
+        })
+
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+        var isDragging = false
+        var isMiniMode = false
+
+        floatingView?.setOnTouchListener { v, event ->
+            gestureDetector.onTouchEvent(event)
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params?.x ?: 0
+                    initialY = params?.y ?: 0
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    isDragging = false
+                    if (isMiniMode) {
+                        isMiniMode = false
+                        restoreFromMini()
+                    }
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - initialTouchX
+                    val dy = event.rawY - initialTouchY
+                    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) isDragging = true
+                    if (isDragging) {
+                        params?.x = initialX + dx.toInt()
+                        params?.y = initialY + dy.toInt()
+                        windowManager.updateViewLayout(floatingView, params)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (isDragging) {
+                        // Edge snapping
+                        val x = params?.x ?: 0
+                        if (x < screenWidth / 4) {
+                            snapToEdgeAndMinimize(true)
+                            isMiniMode = true
+                        } else if (x > screenWidth * 3 / 4) {
+                            snapToEdgeAndMinimize(false)
+                            isMiniMode = true
+                        }
+                    }
+                    true
+                }
+                else -> false
             }
         }
+    }
 
-        root.setOnTouchListener(dragTouchListener)
-        infoLayout.setOnTouchListener(dragTouchListener)
-        tvTitle?.setOnTouchListener(dragTouchListener)
-        tvArtist?.setOnTouchListener(dragTouchListener)
+    private fun snapToEdgeAndMinimize(left: Boolean) {
+        val targetX = if (left) -50 else screenWidth
+        params?.x = targetX
+        windowManager.updateViewLayout(floatingView, params)
+        
+        // Hide info, keep only artwork
+        songInfoContainer?.visibility = View.GONE
+        btnPlayPause?.visibility = View.GONE
+        btnPrev?.visibility = View.GONE
+        btnNext?.visibility = View.GONE
+        btnClose?.visibility = View.GONE
+        progressBar?.visibility = View.GONE
+    }
 
-        // ── Add to screen ────────────────────────────────────────────
-        try {
-            windowManager.addView(root, params)
-            floatingView = root
-            Log.d(TAG, "Floating window added to screen")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to add floating window: $e")
-            floatingView = null
+    private fun restoreFromMini() {
+        songInfoContainer?.visibility = View.VISIBLE
+        btnPlayPause?.visibility = View.VISIBLE
+        btnPrev?.visibility = View.VISIBLE
+        btnNext?.visibility = View.VISIBLE
+        btnClose?.visibility = View.VISIBLE
+        progressBar?.visibility = View.VISIBLE
+        
+        val x = params?.x ?: 0
+        if (x < 0) params?.x = 0
+        if (x > screenWidth - (floatingView?.width ?: 0)) {
+            params?.x = screenWidth - (floatingView?.width ?: 0)
+        }
+        windowManager.updateViewLayout(floatingView, params)
+    }
+
+    private fun bounceAnimation() {
+        val scaleX = ObjectAnimator.ofFloat(floatingView, "scaleX", 1f, 1.1f, 1f)
+        val scaleY = ObjectAnimator.ofFloat(floatingView, "scaleY", 1f, 1.1f, 1f)
+        AnimatorSet().apply {
+            playTogether(scaleX, scaleY)
+            duration = 300
+            interpolator = OvershootInterpolator()
+            start()
+        }
+    }
+
+    private fun loadArtwork(url: String) {
+        if (url.isBlank()) {
+            ivArtwork?.setImageResource(android.R.drawable.ic_media_play)
+            cardRoot?.setCardBackgroundColor(Color.parseColor("#D6222226"))
+            return
+        }
+        ivArtwork?.load(url) {
+            transformations(CircleCropTransformation())
+            allowHardware(false)
+            target { result ->
+                ivArtwork?.setImageDrawable(result)
+                if (result is BitmapDrawable) {
+                    Palette.from(result.bitmap).generate { palette: Palette? ->
+                        val vibrant = palette?.getVibrantColor(Color.parseColor("#D6222226")) ?: Color.parseColor("#D6222226")
+                        // Apply semi-transparency (alpha 0xD6)
+                        val color = (vibrant and 0x00FFFFFF) or -0x2a000000
+                        cardRoot?.setCardBackgroundColor(color)
+                    }
+                }
+            }
         }
     }
 
     fun updateSongInfo(title: String, artist: String, playing: Boolean) {
         isPlaying = playing
         currentArtist = artist
-        currentLyrics = "" // 新歌重置歌词
+        currentLyrics = ""
         handler.post {
             tvTitle?.text = title
             tvTitle?.isSelected = true
             tvArtist?.setText(artist)
-            btnPlayPause?.setImageResource(
-                if (isPlaying) R.drawable.ic_floating_pause
-                else R.drawable.ic_floating_play
-            )
+            btnPlayPause?.setImageResource(if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
         }
     }
 
     fun hide() {
-        isHiding = true
         handler.post {
-            floatingView?.let {
-                try {
-                    windowManager.removeView(it)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error removing floating view: $e")
-                }
-            }
+            floatingView?.let { windowManager.removeView(it) }
             floatingView = null
             params = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
-            Log.d(TAG, "Floating window removed")
         }
     }
-
-    fun isShowing(): Boolean = floatingView != null
 
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
-        // 只清空与 Service 视图渲染相关的监听器
-        // onControlAction 的生命周期由 Flutter 引擎（Plugin）管理，不在这里清空
         FloatingWindowBridge.onSongTitleChanged = null
         FloatingWindowBridge.onLyricsChanged = null
+        FloatingWindowBridge.onArtworkChanged = null
+        FloatingWindowBridge.onProgressChanged = null
         handler.post {
-            floatingView?.let {
-                try {
-                    windowManager.removeView(it)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error removing floating view in onDestroy: $e")
-                }
-            }
+            floatingView?.let { windowManager.removeView(it) }
             floatingView = null
             params = null
-            // 清理 Handler 队列，防止内存泄漏
             handler.removeCallbacksAndMessages(null)
         }
     }
 
     private fun triggerControlAction(action: String) {
-        val callback = FloatingWindowBridge.onControlAction
-        if (callback != null) {
-            callback.invoke(action)
-        } else {
-            Log.d(TAG, "Flutter engine not running, starting MainActivity with pending action: $action")
-            val intent = Intent(this, MainActivity::class.java).apply {
+        FloatingWindowBridge.onControlAction?.invoke(action) ?: run {
+            startActivity(Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 putExtra("pending_action", action)
-            }
-            startActivity(intent)
-        }
-    }
-}
-
-class MarqueeTextView(context: android.content.Context) : android.widget.TextView(context) {
-    override fun isFocused(): Boolean = true
-    override fun onFocusChanged(focused: Boolean, direction: Int, previouslyFocusedRect: android.graphics.Rect?) {
-        if (focused) {
-            super.onFocusChanged(focused, direction, previouslyFocusedRect)
-        }
-    }
-    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
-        if (hasWindowFocus) {
-            super.onWindowFocusChanged(hasWindowFocus)
+            })
         }
     }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/song.dart';
@@ -42,6 +43,7 @@ class PlaybackSnapshot {
 /// The owner calls [updateNowPlaying] whenever playback state changes; this
 /// class fans the update out to every registered service.
 class ExternalMediaController {
+  StreamSubscription? _positionSub;
   final AndroidAutoService _androidAutoService = AndroidAutoService();
   final AndroidSystemService _androidSystemService = AndroidSystemService();
   final BluetoothAvrcpService _bluetoothService = BluetoothAvrcpService();
@@ -324,12 +326,18 @@ class ExternalMediaController {
     required String title,
     required String artist,
     required bool isPlaying,
+    String? artworkUrl,
+    int? position,
+    int? duration,
   }) {
     if (!Platform.isAndroid) return;
     FloatingWindowController.show(
       title: title,
       artist: artist,
       isPlaying: isPlaying,
+      artworkUrl: artworkUrl,
+      position: position,
+      duration: duration,
     );
     FloatingWindowController.updateSongTitle(title);
   }
@@ -339,12 +347,18 @@ class ExternalMediaController {
     required String title,
     required String artist,
     required bool isPlaying,
+    String? artworkUrl,
+    int? position,
+    int? duration,
   }) {
     if (!Platform.isAndroid) return;
     FloatingWindowController.update(
       title: title,
       artist: artist,
       isPlaying: isPlaying,
+      artworkUrl: artworkUrl,
+      position: position,
+      duration: duration,
     );
     FloatingWindowController.updateSongTitle(title);
   }
