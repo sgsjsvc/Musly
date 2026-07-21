@@ -36,14 +36,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ndk {
-        //     abiFilters += listOf(
-        //         "arm64-v8a",
-        //         "armeabi-v7a",
-        //         "x86_64",
-        //         "x86"
-        //     )
-        // }
+        ndk {
+            abiFilters.add("armeabi-v7a")
+        }
     }
 
     // Configure signing with custom keystore or debug fallback
@@ -85,6 +80,10 @@ android {
 dependencies {
     implementation("androidx.media:media:1.7.0")
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("io.coil-kt:coil:2.6.0")
+    implementation("androidx.palette:palette:1.0.0")
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.dynamicanimation:dynamicanimation:1.0.0")
 }
 
 flutter {

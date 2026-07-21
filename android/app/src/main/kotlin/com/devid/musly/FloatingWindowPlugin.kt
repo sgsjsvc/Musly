@@ -177,6 +177,15 @@ class FloatingWindowPlugin(
                     val title = call.argument<String>("title") ?: ""
                     val artist = call.argument<String>("artist") ?: ""
                     val playing = call.argument<Boolean>("isPlaying") ?: false
+                    val artwork = call.argument<String>("artworkUrl") ?: ""
+                    val position = call.argument<Number>("position")?.toLong() ?: 0L
+                    val duration = call.argument<Number>("duration")?.toLong() ?: 0L
+
+                    FloatingWindowBridge.currentArtworkUrl = artwork
+                    FloatingWindowBridge.currentPosition = position
+                    FloatingWindowBridge.currentDuration = duration
+                    FloatingWindowBridge.onArtworkChanged?.invoke(artwork)
+                    FloatingWindowBridge.onProgressChanged?.invoke(position, duration)
 
                     val intent = Intent(context, FloatingWindowService::class.java).apply {
                         putExtra("title", title)
@@ -203,15 +212,24 @@ class FloatingWindowPlugin(
                 result.success(true)
             }
             "update" -> {
-                val title = call.argument<String>("title") ?: ""
-                val artist = call.argument<String>("artist") ?: ""
-                val playing = call.argument<Boolean>("isPlaying") ?: false
+                    val title = call.argument<String>("title") ?: ""
+                    val artist = call.argument<String>("artist") ?: ""
+                    val playing = call.argument<Boolean>("isPlaying") ?: false
+                    val artwork = call.argument<String>("artworkUrl") ?: ""
+                    val position = call.argument<Number>("position")?.toLong() ?: 0L
+                    val duration = call.argument<Number>("duration")?.toLong() ?: 0L
 
-                val intent = Intent(context, FloatingWindowService::class.java).apply {
-                    putExtra("title", title)
-                    putExtra("artist", artist)
-                    putExtra("isPlaying", playing)
-                }
+                    FloatingWindowBridge.currentArtworkUrl = artwork
+                    FloatingWindowBridge.currentPosition = position
+                    FloatingWindowBridge.currentDuration = duration
+                    FloatingWindowBridge.onArtworkChanged?.invoke(artwork)
+                    FloatingWindowBridge.onProgressChanged?.invoke(position, duration)
+
+                    val intent = Intent(context, FloatingWindowService::class.java).apply {
+                        putExtra("title", title)
+                        putExtra("artist", artist)
+                        putExtra("isPlaying", playing)
+                    }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
                 } else {
@@ -227,6 +245,14 @@ class FloatingWindowPlugin(
             "updateLyrics" -> {
                 val lyrics = call.argument<String>("lyrics") ?: ""
                 FloatingWindowBridge.currentLyrics = lyrics
+                result.success(null)
+            }
+            "updateProgress" -> {
+                val position = call.argument<Number>("position")?.toLong() ?: 0L
+                val duration = call.argument<Number>("duration")?.toLong() ?: 0L
+                FloatingWindowBridge.currentPosition = position
+                FloatingWindowBridge.currentDuration = duration
+                FloatingWindowBridge.onProgressChanged?.invoke(position, duration)
                 result.success(null)
             }
             else -> result.notImplemented()

@@ -1,29 +1,28 @@
 package com.devid.musly
 
-/**
- * Bridge between FloatingWindowService and FloatingWindowPlugin.
- * Receives button click events from the floating window and forwards
- * them to the Plugin, which then notifies Flutter via MethodChannel.
- */
 object FloatingWindowBridge {
-    // 播放控制事件回调
+    var service: FloatingWindowService? = null
     var onControlAction: ((String) -> Unit)? = null
 
-    // 歌名更新监听
-    var currentSongTitle: String = "暂无播放"
+    var currentSongTitle: String = "未在播放"
         set(value) {
             field = value
             onSongTitleChanged?.invoke(value)
         }
-
     var onSongTitleChanged: ((String) -> Unit)? = null
 
-    // 歌词更新监听
     var currentLyrics: String = ""
         set(value) {
             field = value
             onLyricsChanged?.invoke(value)
+            service?.updateLyrics(value)
         }
-
     var onLyricsChanged: ((String) -> Unit)? = null
+
+    var currentArtworkUrl: String = ""
+    var currentDuration: Long = 0
+    var currentPosition: Long = 0
+    
+    var onProgressChanged: ((Long, Long) -> Unit)? = null
+    var onArtworkChanged: ((String) -> Unit)? = null
 }

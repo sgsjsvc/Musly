@@ -1,74 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/floating_card"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:background="@drawable/floating_window_background"
-    android:padding="8dp"
-    android:gravity="center_vertical"
-    android:elevation="8dp">
+    android:elevation="12dp"
+    android:outlineProvider="background"
+    android:background="@drawable/bg_glass_floating"
+    android:layout_gravity="center">
 
-    <!-- Album Artwork -->
-    <ImageView
-        android:id="@+id/floating_artwork"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
-        android:src="@mipmap/ic_launcher"
-        android:background="@drawable/floating_artwork_background" />
-
-    <!-- Song Info -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:id="@+id/content_container"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="8dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-        <TextView
-            android:id="@+id/floating_title"
+        <!-- Album Artwork (Circular) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/artwork_container"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_marginStart="4dp"
+            app:cardCornerRadius="27dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#22000000">
+
+            <ImageView
+                android:id="@+id/floating_artwork"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@android:drawable/ic_media_play" />
+                
+            <!-- Play/Pause Overlay -->
+            <ImageView
+                android:id="@+id/floating_play_pause"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerInside"
+                android:padding="14dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_media_pause"
+                android:background="#40000000"
+                app:tint="#FFFFFF"
+                android:contentDescription="Play/Pause" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Text Container -->
+        <LinearLayout
+            android:id="@+id/text_container"
+            android:layout_width="230dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="10dp"
+            android:orientation="vertical">
+
+            <!-- Song Title -->
+            <com.devid.musly.SeamlessMarqueeTextView
+                android:id="@+id/floating_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Not Playing"
+                android:textColor="#E6333333"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:singleLine="true" />
+
+            <!-- Lyrics -->
+            <com.devid.musly.SeamlessMarqueeTextView
+                android:id="@+id/floating_lyrics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="无歌词"
+                android:textColor="#B3333333"
+                android:textSize="15sp"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <!-- Controls -->
+        <LinearLayout
+            android:id="@+id/controls_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="未在播放"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:maxWidth="150dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginEnd="6dp">
 
-        <TextView
-            android:id="@+id/floating_artist"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Musly"
-            android:textColor="#B0B0B0"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:maxWidth="150dp"
-            android:layout_marginTop="2dp" />
+            <ImageView
+                android:id="@+id/floating_prev"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:padding="6dp"
+                android:src="@android:drawable/ic_media_previous"
+                android:background="@drawable/bg_ripple_oval"
+                app:tint="#D9333333"
+                android:contentDescription="Previous" />
+
+            <ImageView
+                android:id="@+id/floating_next"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:padding="6dp"
+                android:src="@android:drawable/ic_media_next"
+                android:background="@drawable/bg_ripple_oval"
+                app:tint="#D9333333"
+                android:contentDescription="Next" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Play/Pause Button -->
-    <ImageView
-        android:id="@+id/floating_play_pause"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_media_play"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="播放/暂停" />
-
-    <!-- Next Button -->
-    <ImageView
-        android:id="@+id/floating_next"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_media_next"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="下一首" />
-
-</LinearLayout>
+    <!-- Dynamic Island Container -->
+    <LinearLayout
+        android:id="@+id/dynamic_island_container"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:paddingHorizontal="24dp"
+        android:gravity="center"
+        android:visibility="gone">
+        <com.devid.musly.SeamlessMarqueeTextView
+            android:id="@+id/dynamic_island_title"
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:text="Not Playing"
+            android:textColor="#E6333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:singleLine="true" />
+    </LinearLayout>
+</FrameLayout>

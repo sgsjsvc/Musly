@@ -90,8 +90,6 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
           title: AppLocalizations.of(context)!.language.toUpperCase(),
           children: [
             _buildLanguageSelector(),
-            _buildDivider(),
-            _buildTranslationCredit(),
           ],
         ),
         const SizedBox(height: 24),
@@ -111,8 +109,6 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
             _buildFloatingWindowToggle(),
             _buildDivider(),
             ..._buildBootAutoStartWidgets(),
-            _buildDivider(),
-            _buildCarDrivingModeToggle(),
           ],
         ),
         const SizedBox(height: 24),

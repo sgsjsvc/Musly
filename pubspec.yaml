@@ -11,7 +11,7 @@ publish_to: 'none'
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
 # In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # In Windows, build-name is used as the major, minor, and patch parts
-version: 1.0.13+1
+version: 1.1.5+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -83,8 +83,8 @@ dependency_overrides:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  integration_test:
-    sdk: flutter
+#  integration_test:
+#    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

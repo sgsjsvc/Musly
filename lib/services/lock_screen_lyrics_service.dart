@@ -89,14 +89,11 @@ class LockScreenLyricsService {
 
     // End Live Activity removed for iOS 15 compatibility
     // if (supportsLiveActivities && _activityId != null) {
-    //   try {
-    //     await _liveActivities.endActivity(_activityId!);
-    //     _activityId = null;
-    //   } catch (e) {}
-    // }
     // _activityId = null;
 
-
+    try {
+      await FloatingWindowController.updateLyrics('');
+    } catch (_) {}
   }
 
   /// Start synchronizing lyrics to position updates
@@ -112,6 +109,10 @@ class LockScreenLyricsService {
     }
     
     debugPrint('[Lyrics] Lyrics loaded: ${_currentLyrics!.lineCount} lines');
+    // Set initial lyrics indicator for floating window
+    try {
+      FloatingWindowController.updateLyrics('♪');
+    } catch (_) {}
 
     // Use a timer-based approach for more control over update frequency
     DateTime? lastUpdate;
